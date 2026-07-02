@@ -761,6 +761,48 @@ def save_submission(path, fieldnames, rows):
         writer.writerows(rows)
 
 
+def first_existing(paths, required=True):
+    for path in paths:
+        if path and os.path.exists(path):
+            return path
+    if required:
+        raise FileNotFoundError("None of these paths exist: " + ", ".join(str(p) for p in paths))
+    return None
+
+
+def runtime_paths():
+    base_dir = Path(__file__).resolve().parent
+    cwd = Path.cwd()
+    test_path = first_existing(
+        [
+            base_dir / "data" / "test.jsonl",
+            cwd / "data" / "test.jsonl",
+            base_dir / "open" / "test.jsonl",
+            cwd / "open" / "test.jsonl",
+            Path("/data/test.jsonl"),
+            Path("/open/test.jsonl"),
+        ]
+    )
+    sample_submission_path = first_existing(
+        [
+            base_dir / "data" / "sample_submission.csv",
+            cwd / "data" / "sample_submission.csv",
+            base_dir / "open" / "sample_submission.csv",
+            cwd / "open" / "sample_submission.csv",
+            Path("/data/sample_submission.csv"),
+            Path("/open/sample_submission.csv"),
+        ],
+        required=False,
+    )
+    model_dir = first_existing([base_dir / "model", cwd / "model"])
+    output_path = base_dir / "output" / "submission.csv"
+    return str(test_path), str(sample_submission_path) if sample_submission_path else None, str(model_dir), str(output_path)
+
+
+def submission_rows_from_ids(ids):
+    return ["id", "action"], [{"id": sample_id, "action": "respond_only"} for sample_id in ids]
+
+
 def submission_session_id(sample_id):
     return sample_id.rsplit("-step_", 1)[0] if "-step_" in sample_id else sample_id
 
@@ -799,11 +841,16 @@ def build_session_lookup(samples):
     return lookup, pair_count, collision_count
 
 
-def apply_session_lookup_override(samples, preds, data_dir):
+def apply_session_lookup_override(samples, preds, data_dir, model_dir=None):
     source_samples = []
-    train_path = os.path.join(data_dir, "train.jsonl")
-    if os.path.exists(train_path):
-        source_samples.extend(load_jsonl(train_path))
+    train_candidates = []
+    if model_dir:
+        train_candidates.append(os.path.join(model_dir, "train.jsonl"))
+    train_candidates.append(os.path.join(data_dir, "train.jsonl"))
+    for train_path in train_candidates:
+        if os.path.exists(train_path):
+            source_samples.extend(load_jsonl(train_path))
+            break
     source_samples.extend(samples)
 
     lookup, pair_count, collision_count = build_session_lookup(source_samples)
@@ -830,11 +877,9 @@ def apply_session_lookup_override(samples, preds, data_dir):
 
 
 def main():
-    test_path = "./data/test.jsonl"
-    sample_submission_path = "./data/sample_submission.csv"
-    output_path = "./output/submission.csv"
+    test_path, sample_submission_path, model_dir, output_path = runtime_paths()
 
-    model, feature_mode = load_model_and_config("./model")
+    model, feature_mode = load_model_and_config(model_dir)
     samples = load_jsonl(test_path)
 
     missing_schema = sum(
@@ -855,13 +900,16 @@ def main():
         preds = [str(pred) for pred in model.predict(texts)] if texts else []
 
     try:
-        preds = apply_session_lookup_override(samples, preds, "./data")
+        preds = apply_session_lookup_override(samples, preds, str(Path(test_path).resolve().parent), model_dir)
     except Exception as exc:
         print(f"warning: session lookup override skipped: {exc}")
 
     pred_by_id = dict(zip(ids, preds))
 
-    fieldnames, rows = load_sample_submission(sample_submission_path)
+    if sample_submission_path:
+        fieldnames, rows = load_sample_submission(sample_submission_path)
+    else:
+        fieldnames, rows = submission_rows_from_ids(ids)
     for row in rows:
         if row["id"] in pred_by_id:
             row["action"] = pred_by_id[row["id"]]
