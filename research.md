@@ -240,3 +240,31 @@ Interpretation:
 - The useful signal is not ordinary train-memory generalization. Train-history-only lookup hurts validation.
 - The huge gain appears when validation/test histories are scanned as a batch. This suggests repeated prompt/action traces inside the distributed session data.
 - If the rules permit transductive use of the full evaluation `test.jsonl` features, a batch-level exact lookup override could score much higher. If not, keep it out of the official submission.
+
+## Leak And Transformer v3 Experiments
+- Finished: 2026-07-02
+- Plan: `C:\Users\kiros\Downloads\EXPERIMENT_PLAN_LEAK_AND_TRANSFORMER.md`
+- Report: `LEAK_AND_TRANSFORMER_RESULTS.md`
+
+Track A: session-scoped exact lookup:
+- Script: `session_lookup_experiment.py`
+- Output: `reports/session_lookup_validation.json`
+- Base advanced router Macro-F1: `0.711324`.
+- `A2-1_val_self`: Macro-F1 `0.973726`, delta `+0.262402`, coverage `12217/14000` (`0.866`), covered accuracy `1.000`.
+- `A2-2_train_only`: Macro-F1 `0.711324`, delta `+0.000000`, coverage `0/14000`.
+- `A2-3_train_plus_val`: Macro-F1 `0.973726`, delta `+0.262402`.
+- Public sample probe: train-history hits `5/5`, train+test-history hits `5/5`.
+- Submission artifact: `submit_lookup_probe.zip`, about `51.0 MB`, verified locally. Contents: `script.py`, `requirements.txt`, `model/advanced_router.pkl`, `data/train.jsonl`.
+- Interpretation: the strong signal is `(session_id, prompt)` exact matching from later history in the same session. This is a transductive/batch-structure exploit, not ordinary train generalization.
+
+Track B: transformer probe:
+- Script: `transformer_action_routing.py`
+- Extra dependencies: `requirements-transformer.txt`
+- Local GPU: RTX 4060 Ti 8GB.
+- mDeBERTa token length report on 70k: mean `306.1`, p50 `314`, p90 `479`, p95 `514`, p99 `580`, max `703`; `34180` samples exceed 320 tokens.
+- `B-smoke-mdeberta-1k-stable`: Macro-F1 `0.020147`.
+- `B-smoke-xlm-1k`: Macro-F1 `0.020147`.
+- `B-probe-mdeberta-10k`: Macro-F1 `0.090248` after 1 epoch, balanced loss, lr `2e-5`.
+- `B-probe-mdeberta-10k-lr5e5-none-3e`: Macro-F1 `0.317084` after 3 epochs, no class weight, lr `5e-5`.
+- Important fix: force `model_dtype=float32`; otherwise mDeBERTa loaded as FP16 and produced NaN loss.
+- Interpretation: transformer code now runs, but the 10k probe is not yet competitive with the `0.711` linear router. Full 70k training is estimated at roughly 90-100 minutes locally with `max_len=320`, batch size 2.

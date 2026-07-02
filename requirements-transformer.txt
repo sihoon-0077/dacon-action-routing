@@ -1,0 +1,7 @@
+torch
+transformers
+sentencepiece
+protobuf
+tiktoken
+safetensors
+accelerate

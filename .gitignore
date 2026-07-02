@@ -1,6 +1,7 @@
 # Competition data and generated artifacts
 data/
 model/
+models/
 output/
 reports/
 

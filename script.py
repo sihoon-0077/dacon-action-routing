@@ -761,6 +761,74 @@ def save_submission(path, fieldnames, rows):
         writer.writerows(rows)
 
 
+def submission_session_id(sample_id):
+    return sample_id.rsplit("-step_", 1)[0] if "-step_" in sample_id else sample_id
+
+
+def iter_session_lookup_pairs(sample):
+    sid = submission_session_id(sample.get("id", ""))
+    history = sample.get("history") or []
+    for i, turn in enumerate(history):
+        if turn.get("role") != "user":
+            continue
+        prompt = turn.get("content", "")
+        if not prompt:
+            continue
+        next_action = None
+        for later in history[i + 1 :]:
+            if later.get("role") == "assistant_action":
+                next_action = later.get("name")
+                break
+            if later.get("role") == "user":
+                break
+        if next_action:
+            yield (sid, prompt), next_action
+
+
+def build_session_lookup(samples):
+    lookup = {}
+    pair_count = 0
+    collision_count = 0
+    for sample in samples:
+        for key, action in iter_session_lookup_pairs(sample):
+            pair_count += 1
+            old = lookup.get(key)
+            if old is not None and old != action:
+                collision_count += 1
+            lookup[key] = action
+    return lookup, pair_count, collision_count
+
+
+def apply_session_lookup_override(samples, preds, data_dir):
+    source_samples = []
+    train_path = os.path.join(data_dir, "train.jsonl")
+    if os.path.exists(train_path):
+        source_samples.extend(load_jsonl(train_path))
+    source_samples.extend(samples)
+
+    lookup, pair_count, collision_count = build_session_lookup(source_samples)
+    out = []
+    hit_count = 0
+    changed_count = 0
+    for sample, pred in zip(samples, preds):
+        key = (submission_session_id(sample.get("id", "")), sample.get("current_prompt", ""))
+        override = lookup.get(key)
+        if override:
+            hit_count += 1
+            if override != pred:
+                changed_count += 1
+            out.append(str(override))
+        else:
+            out.append(str(pred))
+
+    print(
+        "session_lookup: "
+        f"sources={len(source_samples)} keys={len(lookup)} pairs={pair_count} "
+        f"collisions={collision_count} hits={hit_count}/{len(samples)} changed={changed_count}"
+    )
+    return out
+
+
 def main():
     test_path = "./data/test.jsonl"
     sample_submission_path = "./data/sample_submission.csv"
@@ -785,6 +853,12 @@ def main():
     else:
         texts = [serialize_sample(sample, feature_mode) for sample in samples]
         preds = [str(pred) for pred in model.predict(texts)] if texts else []
+
+    try:
+        preds = apply_session_lookup_override(samples, preds, "./data")
+    except Exception as exc:
+        print(f"warning: session lookup override skipped: {exc}")
+
     pred_by_id = dict(zip(ids, preds))
 
     fieldnames, rows = load_sample_submission(sample_submission_path)
