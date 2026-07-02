@@ -248,7 +248,7 @@ def main():
     ce_fine = nn.CrossEntropyLoss(label_smoothing=float(cfg["label_smoothing"]))
     ce_coarse = nn.CrossEntropyLoss()
 
-    best = {"nll": float("inf"), "epoch": 0}
+    best = {"fold_val_nll": float("inf"), "epoch": 0}
     history = []
     start = time.time()
     for epoch in range(1, int(cfg["epochs"]) + 1):
@@ -287,7 +287,7 @@ def main():
         }
         history.append(row)
         print("eval " + json.dumps(row, ensure_ascii=False), flush=True)
-        if metrics["nll"] < best["nll"]:
+        if row["fold_val_nll"] < best["fold_val_nll"]:
             best = row.copy()
             np.save(oof_dir / f"fold_{args.fold}_logits.npy", metrics["fine_logits"])
             np.save(oof_dir / f"fold_{args.fold}_coarse.npy", metrics["coarse_logits"])
