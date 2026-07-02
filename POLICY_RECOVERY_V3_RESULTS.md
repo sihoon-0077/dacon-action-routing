@@ -178,3 +178,34 @@ Smoke / speed:
 - Public sample shape test wrote `submit_policy_v3/output/submission.csv`.
 - 1,000-row local benchmark: `21.25s` including model load.
 - 30k-row rough local estimate: about 5 minutes; T4 should still be within the 10-minute limit unless server overhead is unusually high.
+
+## Leaderboard Fallback Debug
+
+Observation:
+
+- `submit_policy_v3.zip`, `submit_02_fixed_lookup.zip`, and `submit_01_fixed_stable.zip` all scored `0.704342388`.
+- Runtime was also close to the advanced-router submissions.
+
+Most likely cause:
+
+- The evaluation server did not execute the transformer override path.
+- The submission script intentionally caught transformer failures and fell back to the advanced router, so a server-side transformer/tokenizer load failure can produce the exact same score instead of a submission error.
+
+Evidence:
+
+- Local offline loading of the original package succeeded under the local environment.
+- Local end-to-end validation execution changed `1,882` predictions versus the advanced-router validation predictions, proving the package logic is not identical when the transformer path runs.
+- The local end-to-end validation score is inflated because the packaged advanced router is trained on full train data; use the changed-prediction count as the diagnostic signal, not as hidden-score evidence.
+
+Compatibility fix:
+
+- The local environment used `transformers==5.12.1`, while the competition guide lists `transformers==4.46.3`.
+- The first package included `tokenizer.json` but not `spm.model`; older DeBERTa tokenizers may require the SentencePiece model file.
+- Two compatibility packages were created locally:
+  - `submit_policy_v3_spm.zip`: adds `spm.model`, keeps `model.safetensors`.
+  - `submit_policy_v3_bin_spm.zip`: adds `spm.model`, uses `pytorch_model.bin`.
+
+Recommended next submission:
+
+- Submit `submit_policy_v3_bin_spm.zip` first.
+- If it still scores exactly `0.704342388`, create a strict debug package that does not catch transformer exceptions, so the server either runs the transformer or surfaces the real load error.

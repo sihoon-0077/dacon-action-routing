@@ -350,6 +350,15 @@ Submission package:
 - Offline smoke passed. 1,000-row local benchmark: `21.25s` including model load.
 - Session lookup disabled in this v3 package to match the ensemble validation protocol.
 
+Leaderboard debug:
+- `submit_policy_v3.zip` scored the same hidden/public value as advanced-only: `0.704342388`.
+- Local end-to-end validation execution changed `1882` predictions vs advanced-router predictions, so the local package logic is not identical when transformer inference runs.
+- Most likely server behavior: transformer/tokenizer load failed under server `transformers==4.46.3`, then the script fell back to the advanced router via the safety `try/except`.
+- Compatibility packages created locally:
+  - `submit_policy_v3_spm.zip`: includes `spm.model` plus `model.safetensors`.
+  - `submit_policy_v3_bin_spm.zip`: includes `spm.model` plus `pytorch_model.bin`.
+- Recommended next submit: `submit_policy_v3_bin_spm.zip`. If it still ties `0.704342388`, use a strict no-fallback debug package to expose the server-side load error.
+
 Interpretation:
 - Lookup leak and exact state-table recovery are dead ends for hidden generalization.
 - The useful shape is still a two-expert policy: fast advanced linear router as base, transformer representation as specialist.
