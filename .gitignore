@@ -1,0 +1,52 @@
+# Competition data and generated artifacts
+data/
+model/
+output/
+reports/
+
+# Submission packages and extracted submission folders
+*.zip
+submit_*/
+baseline_submit/
+
+# Experiment run outputs
+autoresearch/
+*_runs/
+*_runs_smoke/
+compact_state_runs/
+embedding_runs/
+model_zoo_runs/
+next_steps_margin04_runs/
+next_steps_margin04_logreg_runs/
+next_steps_margin04_strat_c2_runs/
+routing_margin_runs/
+routing_margin_group_runs/
+state_router_runs/
+research_runs/
+research_runs_smoke/
+
+# Python cache
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Local/editor files
+.env
+.venv/
+venv/
+.idea/
+.vscode/
+.DS_Store
+Thumbs.db
+
+# Large model/binary files
+*.pkl
+*.joblib
+*.parquet
+*.npy
+*.npz
+
+# Logs and temporary process files
+*.log
+pid.txt
+process_pid.txt
