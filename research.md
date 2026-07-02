@@ -280,3 +280,13 @@ Transformer bug diagnosis follow-up:
 - Re-run `B-probe-mdeberta-10k-nowfirst-lr5e5-none-3e`: best Macro-F1 `0.490004` at epoch 2, accuracy `0.587851`.
 - Fixed epoch curve: epoch 1 `0.390567`, epoch 2 `0.490004`, epoch 3 `0.483550`.
 - Remaining weak classes in 10k probe: `glob_pattern` F1 `0.000`, `list_directory` `0.067`, `web_search` `0.000`, `lint_or_typecheck` `0.118`.
+
+Full transformer run:
+- Run: `B-full-mdeberta-70k-nowfirst-lr5e5-none-3e`.
+- Settings: full 70k, GroupShuffleSplit seed 42, `microsoft/mdeberta-v3-base`, `layout=now_first`, `max_len=320`, `epochs=3`, `lr=5e-5`, `loss_weight=none`, `batch_size=2`, `grad_accum=16`, `amp=fp16`, `model_dtype=float32`.
+- Runtime: `5775s` (`~96.3 min`) on local RTX 4060 Ti 8GB.
+- Best: epoch 3 Macro-F1 `0.686816`, accuracy `0.702751`.
+- Epoch curve: epoch 1 `0.623584`, epoch 2 `0.676489`, epoch 3 `0.686816`.
+- Stronger than advanced router on class F1 for `grep_search`, `list_directory`, `glob_pattern`, `edit_file`, `write_file`, `apply_patch`, `respond_only`; weaker on execute/communicate classes.
+- Quick validation hybrid: advanced router `0.711324`; transformer alone `0.686816`; action-set override using transformer for its stronger classes reached Macro-F1 `0.719520`.
+- Interpretation: transformer is useful as complementary specialist/logit feature, not as a standalone replacement yet.

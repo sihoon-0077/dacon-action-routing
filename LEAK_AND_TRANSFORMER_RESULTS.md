@@ -84,6 +84,7 @@ Transformer smoke/probe results:
 | `B-probe-mdeberta-10k` | mDeBERTa | `10k` | 1 | `max_len=320`, balanced, lr `2e-5` | `0.090248` | `0.2098` | `276s` |
 | `B-probe-mdeberta-10k-lr5e5-none-3e` | mDeBERTa | `10k` | 3 | `max_len=320`, no weight, lr `5e-5` | `0.317084` | `0.3916` | `823s` |
 | `B-probe-mdeberta-10k-nowfirst-lr5e5-none-3e` | mDeBERTa | `10k` | 3 | `[NOW]` first, `max_len=320`, no weight, lr `5e-5` | `0.490004` | `0.5879` | `548s` best epoch |
+| `B-full-mdeberta-70k-nowfirst-lr5e5-none-3e` | mDeBERTa | `70k` | 3 | `[NOW]` first, `max_len=320`, no weight, lr `5e-5` | `0.686816` | `0.7028` | `5775s` |
 
 Epoch curve for the best 10k probe:
 
@@ -104,6 +105,38 @@ Fixed-layout epoch curve:
 - epoch 1: Macro-F1 `0.390567`, accuracy `0.5156`
 - epoch 2: Macro-F1 `0.490004`, accuracy `0.5879`
 - epoch 3: Macro-F1 `0.483550`, accuracy `0.5863`
+
+Full-data fixed-layout epoch curve:
+
+- epoch 1: Macro-F1 `0.623584`, accuracy `0.6489`
+- epoch 2: Macro-F1 `0.676489`, accuracy `0.6974`
+- epoch 3: Macro-F1 `0.686816`, accuracy `0.7028`
+
+Full-data transformer class F1:
+
+- `read_file`: `0.526549`
+- `grep_search`: `0.610744`
+- `list_directory`: `0.468251`
+- `glob_pattern`: `0.627682`
+- `edit_file`: `0.935950`
+- `write_file`: `0.985663`
+- `apply_patch`: `0.858591`
+- `run_bash`: `0.748108`
+- `run_tests`: `0.694873`
+- `lint_or_typecheck`: `0.544865`
+- `ask_user`: `0.589381`
+- `plan_task`: `0.568338`
+- `web_search`: `0.456929`
+- `respond_only`: `0.999501`
+
+Validation hybrid check against advanced router:
+
+- Advanced router alone: Macro-F1 `0.711324`.
+- Transformer alone: Macro-F1 `0.686816`.
+- Override advanced predictions with transformer predictions only for actions where transformer class F1 is higher (`read_file`, `grep_search`, `list_directory`, `glob_pattern`, `edit_file`, `write_file`, `apply_patch`, `respond_only`): Macro-F1 `0.719520`.
+- Inspect-only override: Macro-F1 `0.715841`.
+
+Interpretation: full-data transformer is not strong enough as a standalone model, but it carries complementary signal for inspect and modify classes. The next practical step is not a pure transformer submission; it is a hybrid/stacked model using transformer logits or class-specific overrides.
 
 Implementation notes:
 
