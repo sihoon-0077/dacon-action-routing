@@ -17,8 +17,8 @@ Fast verification phases completed:
 
 Long-running model checkpoint phase:
 
-- `v3-run1-mdeberta-nowfirst-lr5e5-save` is running to reproduce the existing full mDeBERTa validation run with `--save-model`.
-- This is needed because the previous full run saved validation logits only, not a reusable checkpoint.
+- `v3-run1-mdeberta-nowfirst-lr5e5-save` completed and saved a reusable checkpoint.
+- The previous full run had slightly better logits-only validation, but no saved model. The submission package therefore uses this saved checkpoint.
 
 ## Q0 Fixed Split
 
@@ -153,14 +153,28 @@ The main bottleneck is no longer simple feature engineering. It is deployable pr
 
 ## Submit Readiness
 
-Not ready yet for `submit_policy_v3.zip`.
+Ready locally:
 
-Reason:
+- submit zip: `submit_policy_v3.zip`
+- zip size: `547,553,522` bytes
+- unpacked size: `603,014,931` bytes
+- structure: `model/`, `script.py`, `requirements.txt`
+- requirements: empty, uses server-provided packages
+- session lookup: disabled for this v3 package
 
-- The previous full transformer run saved only validation logits.
-- A reusable transformer checkpoint is now being trained with `--save-model`.
-- After it finishes, we still need:
-  - fp16/safetensors size check;
-  - offline inference smoke test;
-  - 30k-row time estimate;
-  - zip structure validation.
+Saved checkpoint validation:
+
+| variant | Macro-F1 | accuracy |
+|---|---:|---:|
+| saved mDeBERTa argmax | `0.683043` | `0.701829` |
+| saved mDeBERTa calibrated + bias | `0.691702` | `0.704736` |
+| advanced router + saved mDeBERTa override | `0.721087` | `0.719410` |
+
+The earlier `0.721702` result came from a logits-only run without a saved checkpoint. The package uses the saved checkpoint and should reproduce the `0.721087` local validation variant.
+
+Smoke / speed:
+
+- Offline smoke passed with `HF_HUB_OFFLINE=1` and `TRANSFORMERS_OFFLINE=1`.
+- Public sample shape test wrote `submit_policy_v3/output/submission.csv`.
+- 1,000-row local benchmark: `21.25s` including model load.
+- 30k-row rough local estimate: about 5 minutes; T4 should still be within the 10-minute limit unless server overhead is unusually high.

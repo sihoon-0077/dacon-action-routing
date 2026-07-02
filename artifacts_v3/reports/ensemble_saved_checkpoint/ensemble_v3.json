@@ -1,0 +1,125 @@
+{
+  "best": {
+    "macro_f1": 0.7210867005034608,
+    "accuracy": 0.7194101800652205,
+    "name": "override_stronger_thr0.0",
+    "changes_vs_advanced": 1457,
+    "note": "override advanced when transformer predicts stronger-class action"
+  },
+  "rows": [
+    {
+      "macro_f1": 0.7210867005034608,
+      "accuracy": 0.7194101800652205,
+      "name": "override_stronger_thr0.0",
+      "changes_vs_advanced": 1457,
+      "note": "override advanced when transformer predicts stronger-class action"
+    },
+    {
+      "macro_f1": 0.718241295210948,
+      "accuracy": 0.7177796682262867,
+      "name": "override_stronger_thr0.4",
+      "changes_vs_advanced": 808,
+      "note": "override advanced when transformer predicts stronger-class action"
+    },
+    {
+      "macro_f1": 0.7172171189721988,
+      "accuracy": 0.7164327236636893,
+      "name": "inspect_only_thr0.0",
+      "changes_vs_advanced": 1123,
+      "note": "override only inside inspect group"
+    },
+    {
+      "macro_f1": 0.717008293095365,
+      "accuracy": 0.7167162909400255,
+      "name": "override_stronger_thr0.6",
+      "changes_vs_advanced": 352,
+      "note": "override advanced when transformer predicts stronger-class action"
+    },
+    {
+      "macro_f1": 0.7166576079709748,
+      "accuracy": 0.7164327236636893,
+      "name": "override_stronger_thr0.7",
+      "changes_vs_advanced": 277,
+      "note": "override advanced when transformer predicts stronger-class action"
+    },
+    {
+      "macro_f1": 0.7166147348913645,
+      "accuracy": 0.7160782645682688,
+      "name": "override_stronger_thr0.5",
+      "changes_vs_advanced": 481,
+      "note": "override advanced when transformer predicts stronger-class action"
+    },
+    {
+      "macro_f1": 0.7162868874745948,
+      "accuracy": 0.7158655891110166,
+      "name": "override_stronger_thr0.8",
+      "changes_vs_advanced": 209,
+      "note": "override advanced when transformer predicts stronger-class action"
+    },
+    {
+      "macro_f1": 0.7156740151873378,
+      "accuracy": 0.7147313200056713,
+      "name": "override_stronger_thr0.9",
+      "changes_vs_advanced": 122,
+      "note": "override advanced when transformer predicts stronger-class action"
+    },
+    {
+      "macro_f1": 0.7143851856879309,
+      "accuracy": 0.7147313200056713,
+      "name": "inspect_only_thr0.4",
+      "changes_vs_advanced": 495,
+      "note": "override only inside inspect group"
+    },
+    {
+      "macro_f1": 0.7128692435683556,
+      "accuracy": 0.7132425918049057,
+      "name": "inspect_only_thr0.6",
+      "changes_vs_advanced": 78,
+      "note": "override only inside inspect group"
+    },
+    {
+      "macro_f1": 0.7127777208304907,
+      "accuracy": 0.7129590245285694,
+      "name": "inspect_only_thr0.5",
+      "changes_vs_advanced": 184,
+      "note": "override only inside inspect group"
+    },
+    {
+      "macro_f1": 0.7121024075936135,
+      "accuracy": 0.7122501063377287,
+      "name": "inspect_only_thr0.7",
+      "changes_vs_advanced": 32,
+      "note": "override only inside inspect group"
+    },
+    {
+      "macro_f1": 0.711668035846049,
+      "accuracy": 0.7115411881468878,
+      "name": "inspect_only_thr0.8",
+      "changes_vs_advanced": 12,
+      "note": "override only inside inspect group"
+    },
+    {
+      "macro_f1": 0.7113236414043568,
+      "accuracy": 0.7109740535942153,
+      "name": "advanced_router",
+      "changes_vs_advanced": 0,
+      "note": "safe submitted linear router"
+    },
+    {
+      "macro_f1": 0.7113236414043568,
+      "accuracy": 0.7109740535942153,
+      "name": "inspect_only_thr0.9",
+      "changes_vs_advanced": 0,
+      "note": "override only inside inspect group"
+    },
+    {
+      "macro_f1": 0.6917019521692314,
+      "accuracy": 0.7047355735148164,
+      "name": "transformer_calibrated_biased",
+      "changes_vs_advanced": 2376,
+      "note": "mDeBERTa + T + bias"
+    }
+  ],
+  "advanced_proba_available": false,
+  "advanced_proba_note": "advanced_router.pkl uses LinearSVC for coarse routing and does not expose calibrated predict_proba; E3 probability blending was not run."
+}

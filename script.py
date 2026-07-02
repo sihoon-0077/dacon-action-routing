@@ -862,6 +862,18 @@ def apply_policy_v3_transformer_override(samples, preds, model_dir):
     return out
 
 
+def disable_session_lookup(model_dir):
+    decision_path = os.path.join(model_dir, "decision.json")
+    if not os.path.exists(decision_path):
+        return False
+    try:
+        with open(decision_path, encoding="utf-8") as f:
+            decision = json.load(f)
+        return bool(decision.get("disable_session_lookup", False))
+    except Exception:
+        return False
+
+
 def load_model_and_config(model_dir):
     advanced_router_path = os.path.join(model_dir, "advanced_router.pkl")
     routing_margin_path = os.path.join(model_dir, "routing_margin_router.pkl")
@@ -1043,10 +1055,11 @@ def main():
     except Exception as exc:
         print(f"warning: policy_v3 transformer override skipped: {exc}")
 
-    try:
-        preds = apply_session_lookup_override(samples, preds, str(Path(test_path).resolve().parent), model_dir)
-    except Exception as exc:
-        print(f"warning: session lookup override skipped: {exc}")
+    if not disable_session_lookup(model_dir):
+        try:
+            preds = apply_session_lookup_override(samples, preds, str(Path(test_path).resolve().parent), model_dir)
+        except Exception as exc:
+            print(f"warning: session lookup override skipped: {exc}")
 
     pred_by_id = dict(zip(ids, preds))
 

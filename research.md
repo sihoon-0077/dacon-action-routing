@@ -342,7 +342,15 @@ Current long run:
 - Purpose: reproduce the full mDeBERTa run with `--save-model`, because the previous full run saved logits only.
 - Local GPU status at launch: RTX 4060 Ti 8GB, training uses about `7.0GB` VRAM.
 
+Submission package:
+- The save-model run completed in `5739.6s`; saved checkpoint best epoch 3 Macro-F1 `0.683043`.
+- Recalibrated saved checkpoint: temperature `1.158088`, biased Macro-F1 `0.691702`.
+- Saved-checkpoint ensemble best: `advanced_router + saved mDeBERTa stronger-class override`, Macro-F1 `0.721087`, accuracy `0.719410`.
+- Built `submit_policy_v3.zip`, size `547,553,522` bytes, unpacked `603,014,931` bytes.
+- Offline smoke passed. 1,000-row local benchmark: `21.25s` including model load.
+- Session lookup disabled in this v3 package to match the ensemble validation protocol.
+
 Interpretation:
 - Lookup leak and exact state-table recovery are dead ends for hidden generalization.
 - The useful shape is still a two-expert policy: fast advanced linear router as base, transformer representation as specialist.
-- The next real submit blocker is not validation score; it is creating a size-compliant transformer checkpoint and proving 30k-row inference fits under 10 minutes.
+- The next real blocker after this submit package is improving the transformer specialist without making inference exceed 10 minutes.

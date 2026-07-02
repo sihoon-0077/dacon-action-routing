@@ -1,0 +1,17 @@
+name,macro_f1,accuracy,changes_vs_advanced,note
+override_stronger_thr0.0,0.7210867005034608,0.7194101800652205,1457,override advanced when transformer predicts stronger-class action
+override_stronger_thr0.4,0.718241295210948,0.7177796682262867,808,override advanced when transformer predicts stronger-class action
+inspect_only_thr0.0,0.7172171189721988,0.7164327236636893,1123,override only inside inspect group
+override_stronger_thr0.6,0.717008293095365,0.7167162909400255,352,override advanced when transformer predicts stronger-class action
+override_stronger_thr0.7,0.7166576079709748,0.7164327236636893,277,override advanced when transformer predicts stronger-class action
+override_stronger_thr0.5,0.7166147348913645,0.7160782645682688,481,override advanced when transformer predicts stronger-class action
+override_stronger_thr0.8,0.7162868874745948,0.7158655891110166,209,override advanced when transformer predicts stronger-class action
+override_stronger_thr0.9,0.7156740151873378,0.7147313200056713,122,override advanced when transformer predicts stronger-class action
+inspect_only_thr0.4,0.7143851856879309,0.7147313200056713,495,override only inside inspect group
+inspect_only_thr0.6,0.7128692435683556,0.7132425918049057,78,override only inside inspect group
+inspect_only_thr0.5,0.7127777208304907,0.7129590245285694,184,override only inside inspect group
+inspect_only_thr0.7,0.7121024075936135,0.7122501063377287,32,override only inside inspect group
+inspect_only_thr0.8,0.711668035846049,0.7115411881468878,12,override only inside inspect group
+advanced_router,0.7113236414043568,0.7109740535942153,0,safe submitted linear router
+inspect_only_thr0.9,0.7113236414043568,0.7109740535942153,0,override only inside inspect group
+transformer_calibrated_biased,0.6917019521692314,0.7047355735148164,2376,mDeBERTa + T + bias

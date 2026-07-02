@@ -63,6 +63,7 @@ def main():
     decision["max_len"] = 320
     decision["history_pairs"] = 6
     decision["batch_size"] = args.batch_size
+    decision["disable_session_lookup"] = True
     decision["classes"] = decision.get("classes") or [
         "read_file",
         "grep_search",
