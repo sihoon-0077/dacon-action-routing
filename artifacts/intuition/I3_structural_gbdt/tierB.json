@@ -1,0 +1,13 @@
+{
+  "tier_a": "not_applicable",
+  "tier_b": "fail",
+  "tier_c": "not_applicable",
+  "final": "analysis_only",
+  "base_macro_f1": 0.7087287637290434,
+  "new_macro_f1": 0.3178064693795316,
+  "delta": -0.39092229434951176,
+  "target_delta": null,
+  "worst_class_drop": null,
+  "half_split_stability": "A_to_B only",
+  "decision": "Use as diversity probe only; not a submit member unless probability blend later proves useful."
+}

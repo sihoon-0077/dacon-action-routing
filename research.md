@@ -372,3 +372,30 @@ Interpretation:
 - Fold generation complete: counts `13898/14078/14033/13925/14066`, max deviation `0.007286`, all classes present per fold.
 - Serializer golden generated and verified: `[NOW]` first, `[H6]` oldest to `[H1]` newest.
 - Fold0 gate training started with `mdeberta_a_local8gb` effective batch 32. First attempt hit fp16-gradient unscale error; fixed by forcing trainable weights to fp32 before autocast. Second attempt is running.
+
+## Intuition Validation Protocol v2
+- Finished: 2026-07-03
+- Plan: `C:\Users\kiros\Downloads\intuition_validation_protocol_v2_codex.md`
+- Report: `artifacts/intuition/SUMMARY.md`
+- Runtime: full CPU proxy run about `18m`; corrected decision-stage rerun about `24s`.
+
+Baselines:
+- Advanced router validation Macro-F1: `0.711324`.
+- Static advanced + transformer stronger-class override validation Macro-F1: `0.721702`.
+- v4 mDeBERTa fold0 best Macro-F1: `0.693044`.
+
+Validated decisions:
+- I1 workflow flags passed Tier B: proxy delta `+0.003935`, execute target delta `+0.011375`, stable on both half splits. Adopt as serializer/state feature candidate.
+- I145 combined bundle passed weakly: proxy delta `+0.002803`, but half split B was nearly flat. Use only as a v2 serializer ablation candidate, not directly as final logic.
+- I4 numeric result buckets failed: delta `-0.001317`.
+- I5 surface flags failed: delta `-0.001257`.
+- I6 last3 prior failed after corrected advanced/transformer baseline: transformer-score gain only `+0.000442`.
+- I7 turn-bucket bias failed: cross-half average delta `-0.008994`.
+- I9 learned override selector failed: cross-half delta vs static override `-0.020104`; it over-selects transformer overrides.
+- I10 class-specific thresholds looked good on full validation (`0.724497`, `+0.002795` vs static), but failed strict half-split stability: A->B `+0.000785`, B->A `-0.003547` vs static. Reject for current submit because it overfits validation.
+- I3 structural ExtraTrees probe failed badly (`0.317806` on A->B), so structural-only tree member is not useful as a direct ensemble member.
+
+Interpretation:
+- The safest current submit logic remains the static stronger-class transformer override, not a learned selector or class-threshold table.
+- The only feature hypothesis worth carrying into transformer serializer v2 is workflow-state flags. Numeric result parsing and surface flags should stay out unless redesigned.
+- Full transformer replacement remains rejected; transformer should stay a specialist behind the advanced router.

@@ -1,0 +1,31 @@
+{
+  "tier_a": "pass",
+  "tier_b": "fail",
+  "tier_c": "not_applicable",
+  "final": "reject",
+  "base_macro_f1": 0.6897865805656586,
+  "new_macro_f1": null,
+  "delta": -0.008993616513466252,
+  "target_delta": null,
+  "worst_class_drop": null,
+  "half_split_stability": [
+    {
+      "direction": "A_to_B",
+      "macro_f1": 0.6784513350589041,
+      "accuracy": 0.6907461850762985,
+      "base_macro_f1": 0.6909069499794646,
+      "delta": -0.012455614920560465
+    },
+    {
+      "direction": "B_to_A",
+      "macro_f1": 0.6826685733390466,
+      "accuracy": 0.7063047536981186,
+      "base_macro_f1": 0.6882001914454187,
+      "delta": -0.005531618106372038
+    }
+  ],
+  "uses_current_prompt": "no",
+  "uses_history_action": "no",
+  "uses_result_summary": "no",
+  "decision": "Reject: cross-half turn bias gain is too small or unstable."
+}

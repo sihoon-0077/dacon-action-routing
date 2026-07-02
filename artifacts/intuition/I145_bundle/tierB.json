@@ -1,0 +1,26 @@
+{
+  "tier_a": "not_run",
+  "tier_b": "pass",
+  "tier_c": "not_run",
+  "final": "adopt",
+  "base_macro_f1": 0.6599809062162016,
+  "new_macro_f1": 0.6627834082114034,
+  "delta": 0.0028025019952017116,
+  "base_accuracy": 0.6639727775414717,
+  "new_accuracy": 0.6673755848575075,
+  "target_delta": 0.002802501995201858,
+  "worst_class_drop": -0.008624843173827834,
+  "half_split_stability": {
+    "valA": {
+      "base_macro_f1": 0.6609971189335544,
+      "new_macro_f1": 0.6664805215165607,
+      "delta": 0.0054834025830062805
+    },
+    "valB": {
+      "base_macro_f1": 0.6583522515680095,
+      "new_macro_f1": 0.6585472764851504,
+      "delta": 0.00019502491714096237
+    }
+  },
+  "decision": "Use as candidate serializer-v2 bundle only if it beats individual features."
+}

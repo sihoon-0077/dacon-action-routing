@@ -1,0 +1,24 @@
+{
+  "tier_a": "pass",
+  "tier_b": "fail",
+  "tier_c": "not_applicable",
+  "final": "reject",
+  "base_macro_f1": 0.6897865805656586,
+  "new_macro_f1": 0.6902286548430511,
+  "delta": 0.00044207427739251237,
+  "target_delta": null,
+  "worst_class_drop": null,
+  "half_split_stability": "not_run",
+  "uses_current_prompt": "no",
+  "uses_history_action": "yes",
+  "uses_result_summary": "no",
+  "decision": "Reject: last3 prior did not add enough over calibrated transformer scores.",
+  "best": {
+    "min_count": 20,
+    "alpha_prior": 0.1,
+    "macro_f1": 0.6902286548430511,
+    "accuracy": 0.7045937898766482,
+    "delta_vs_transformer": 0.00044207427739251237,
+    "changes_vs_transformer": 164
+  }
+}

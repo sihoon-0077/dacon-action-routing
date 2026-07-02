@@ -1,0 +1,50 @@
+{
+  "A_to_B_train_thresholds": {
+    "read_file": 0.0,
+    "grep_search": 0.4,
+    "list_directory": 0.0,
+    "glob_pattern": 0.7,
+    "edit_file": 0.9,
+    "write_file": 0.0,
+    "apply_patch": 0.9,
+    "run_bash": 0.6,
+    "run_tests": 1.1,
+    "lint_or_typecheck": 1.1,
+    "ask_user": 1.1,
+    "plan_task": 0.7,
+    "web_search": 1.1,
+    "respond_only": 0.0
+  },
+  "B_to_A_train_thresholds": {
+    "read_file": 0.0,
+    "grep_search": 0.0,
+    "list_directory": 0.0,
+    "glob_pattern": 0.5,
+    "edit_file": 0.9,
+    "write_file": 0.9,
+    "apply_patch": 0.6,
+    "run_bash": 1.1,
+    "run_tests": 1.1,
+    "lint_or_typecheck": 1.1,
+    "ask_user": 0.4,
+    "plan_task": 0.6,
+    "web_search": 1.1,
+    "respond_only": 0.0
+  },
+  "full_thresholds": {
+    "read_file": 0.0,
+    "grep_search": 0.0,
+    "list_directory": 0.0,
+    "glob_pattern": 0.7,
+    "edit_file": 0.9,
+    "write_file": 0.9,
+    "apply_patch": 0.6,
+    "run_bash": 0.8,
+    "run_tests": 1.1,
+    "lint_or_typecheck": 1.1,
+    "ask_user": 1.1,
+    "plan_task": 0.6,
+    "web_search": 1.1,
+    "respond_only": 0.0
+  }
+}

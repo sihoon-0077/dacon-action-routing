@@ -1,0 +1,26 @@
+{
+  "tier_a": "not_run",
+  "tier_b": "pass",
+  "tier_c": "not_run",
+  "final": "adopt",
+  "base_macro_f1": 0.6599809062162016,
+  "new_macro_f1": 0.6639159638514563,
+  "delta": 0.003935057635254702,
+  "base_accuracy": 0.6639727775414717,
+  "new_accuracy": 0.6680845030483482,
+  "target_delta": 0.011374562691761477,
+  "worst_class_drop": -0.004239574722145645,
+  "half_split_stability": {
+    "valA": {
+      "base_macro_f1": 0.6609971189335544,
+      "new_macro_f1": 0.6652814151069285,
+      "delta": 0.004284296173374114
+    },
+    "valB": {
+      "base_macro_f1": 0.6583522515680095,
+      "new_macro_f1": 0.6620028553178253,
+      "delta": 0.0036506037498158506
+    }
+  },
+  "decision": "Adopt into serializer state if the execute loop gain is stable."
+}

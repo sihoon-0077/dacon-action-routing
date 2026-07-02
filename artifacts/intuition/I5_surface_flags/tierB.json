@@ -1,0 +1,26 @@
+{
+  "tier_a": "not_run",
+  "tier_b": "fail",
+  "tier_c": "not_run",
+  "final": "reject",
+  "base_macro_f1": 0.6599809062162016,
+  "new_macro_f1": 0.6587236840861027,
+  "delta": -0.001257222130098934,
+  "base_accuracy": 0.6639727775414717,
+  "new_accuracy": 0.6629094002552105,
+  "target_delta": -0.002195989018094313,
+  "worst_class_drop": -0.009320263977595111,
+  "half_split_stability": {
+    "valA": {
+      "base_macro_f1": 0.6609971189335544,
+      "new_macro_f1": 0.6605856847161939,
+      "delta": -0.00041143421736045127
+    },
+    "valB": {
+      "base_macro_f1": 0.6583522515680095,
+      "new_macro_f1": 0.6563214079314623,
+      "delta": -0.0020308436365471527
+    }
+  },
+  "decision": "Reject for now: it did not clear the Tier B delta/stability rule."
+}
