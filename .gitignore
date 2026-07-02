@@ -26,6 +26,14 @@ state_router_runs/
 research_runs/
 research_runs_smoke/
 
+# v4 pipeline generated heavy artifacts
+/pipeline_v4/artifacts/models/
+/pipeline_v4/artifacts/oof/
+/pipeline_v4/artifacts/calib/
+/pipeline_v4/artifacts/decision/
+/pipeline_v4/artifacts/reports/**/*.log
+/pipeline_v4/artifacts/reports/**/pid.txt
+
 # Python cache
 __pycache__/
 *.py[cod]

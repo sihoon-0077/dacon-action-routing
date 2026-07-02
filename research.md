@@ -363,3 +363,12 @@ Interpretation:
 - Lookup leak and exact state-table recovery are dead ends for hidden generalization.
 - The useful shape is still a two-expert policy: fast advanced linear router as base, transformer representation as specialist.
 - The next real blocker after this submit package is improving the transformer specialist without making inference exceed 10 minutes.
+
+## OOF Policy Recovery v4
+- Started: 2026-07-02
+- Plan: `C:\Users\kiros\Downloads\FINAL_SPEC_v4_OOF_PIPELINE.md`
+- Progress report: `OOF_PIPELINE_V4_PROGRESS.md`
+- Implemented `pipeline_v4/` scaffold, deterministic session folds, v4 serializer, golden test, multi-task fold trainer, calibration, OOF assembly, and bias optimizer.
+- Fold generation complete: counts `13898/14078/14033/13925/14066`, max deviation `0.007286`, all classes present per fold.
+- Serializer golden generated and verified: `[NOW]` first, `[H6]` oldest to `[H1]` newest.
+- Fold0 gate training started with `mdeberta_a_local8gb` effective batch 32. First attempt hit fp16-gradient unscale error; fixed by forcing trainable weights to fp32 before autocast. Second attempt is running.
