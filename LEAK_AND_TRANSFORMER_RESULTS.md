@@ -83,6 +83,7 @@ Transformer smoke/probe results:
 | `B-smoke-xlm-1k` | XLM-R | `1k` | 1 | `max_len=256`, balanced | `0.020147` | `0.1642` | `34s` |
 | `B-probe-mdeberta-10k` | mDeBERTa | `10k` | 1 | `max_len=320`, balanced, lr `2e-5` | `0.090248` | `0.2098` | `276s` |
 | `B-probe-mdeberta-10k-lr5e5-none-3e` | mDeBERTa | `10k` | 3 | `max_len=320`, no weight, lr `5e-5` | `0.317084` | `0.3916` | `823s` |
+| `B-probe-mdeberta-10k-nowfirst-lr5e5-none-3e` | mDeBERTa | `10k` | 3 | `[NOW]` first, `max_len=320`, no weight, lr `5e-5` | `0.490004` | `0.5879` | `548s` best epoch |
 
 Epoch curve for the best 10k probe:
 
@@ -90,11 +91,25 @@ Epoch curve for the best 10k probe:
 - epoch 2: Macro-F1 `0.277246`
 - epoch 3: Macro-F1 `0.317084`
 
+Bug diagnosis and fix:
+
+- The original serializer placed `[NOW] {current_prompt}` at the end.
+- Hugging Face tokenizers truncate from the right by default, so long examples kept old history and dropped the target prompt.
+- On the same 10k diagnostic subset, `4937/10000` examples exceeded 320 tokens and `4393/10000` lost `[NOW]` after truncation.
+- Label index order was checked and matched `ALL_CLASSES`; the issue was not a label-order bug.
+- After moving `[NOW]` to the front and placing recent history first, `[NOW]` missing count became `0/10000`.
+
+Fixed-layout epoch curve:
+
+- epoch 1: Macro-F1 `0.390567`, accuracy `0.5156`
+- epoch 2: Macro-F1 `0.490004`, accuracy `0.5879`
+- epoch 3: Macro-F1 `0.483550`, accuracy `0.5863`
+
 Implementation notes:
 
 - mDeBERTa initially loaded as FP16 in this environment and produced NaN loss. Fix: force `model_dtype=float32`, use AMP only for forward, and use GradScaler.
 - Full 70k / 3 epoch run is feasible but expensive on local 8GB. Runtime estimate from 10k probe is roughly 90-100 minutes at `max_len=320`, batch size 2.
-- The transformer probe is not yet competitive with the linear advanced router. It should not replace the current submission without a full-data run and validation above `0.711`.
+- The fixed-layout transformer is still not yet competitive on the 10k probe, but the previous `0.317` result was invalid because current prompts were often truncated away.
 
 ## Recommendation
 

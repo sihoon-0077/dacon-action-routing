@@ -268,3 +268,15 @@ Track B: transformer probe:
 - `B-probe-mdeberta-10k-lr5e5-none-3e`: Macro-F1 `0.317084` after 3 epochs, no class weight, lr `5e-5`.
 - Important fix: force `model_dtype=float32`; otherwise mDeBERTa loaded as FP16 and produced NaN loss.
 - Interpretation: transformer code now runs, but the 10k probe is not yet competitive with the `0.711` linear router. Full 70k training is estimated at roughly 90-100 minutes locally with `max_len=320`, batch size 2.
+
+Transformer bug diagnosis follow-up:
+- User correctly flagged that Macro-F1 `0.317084` is suspicious because it underperforms a simple TF-IDF baseline.
+- Label order check: `LABEL_TO_ID` and evaluation labels match `ALL_CLASSES`; no label-index mismatch found.
+- Same 10k split prompt-only TF-IDF+LogReg Macro-F1: `0.384628`.
+- Root cause found: the original transformer serializer placed `[NOW] current_prompt` at the end, while tokenizer truncation keeps the beginning.
+- On the 10k diagnostic subset, `4937/10000` examples exceeded 320 tokens and `4393/10000` lost `[NOW]` after truncation.
+- Fix: move `[NOW]` to the front and serialize recent history first (`layout=now_first`).
+- After fix, `[NOW]` missing after truncation: `0/10000`.
+- Re-run `B-probe-mdeberta-10k-nowfirst-lr5e5-none-3e`: best Macro-F1 `0.490004` at epoch 2, accuracy `0.587851`.
+- Fixed epoch curve: epoch 1 `0.390567`, epoch 2 `0.490004`, epoch 3 `0.483550`.
+- Remaining weak classes in 10k probe: `glob_pattern` F1 `0.000`, `list_directory` `0.067`, `web_search` `0.000`, `lint_or_typecheck` `0.118`.

@@ -127,7 +127,7 @@ def history_pairs(sample, max_pairs=6):
     return pairs[-max_pairs:]
 
 
-def serialize_transformer(sample, max_pairs=6):
+def serialize_transformer(sample, max_pairs=6, layout="now_first"):
     meta = sample.get("session_meta", {}) or {}
     ws = meta.get("workspace", {}) or {}
     open_files = ws.get("open_files", []) or []
@@ -142,7 +142,7 @@ def serialize_transformer(sample, max_pairs=6):
     turn = bucket_number(meta.get("turn_index"), [("early", 2), ("mid", 7), ("late", 12)])
     elapsed = bucket_number(meta.get("elapsed_session_sec"), [("short", 60), ("mid", 300), ("long", 1200)])
 
-    chunks = [
+    meta_chunks = [
         "[META] "
         f"tier={clean(meta.get('user_tier'), 40)} "
         f"lang={clean(meta.get('language_pref'), 40)} "
@@ -152,11 +152,25 @@ def serialize_transformer(sample, max_pairs=6):
         "[OPEN] " + (" ".join(clean(path, 120).replace("\\", "/") for path in open_files[:8]) or "none"),
         "[MIX] " + (" ".join(f"{clean(k, 20)}:{float(v):.2f}" for k, v in mix_items) or "none"),
     ]
+    now_chunk = "[NOW] " + clean(sample.get("current_prompt"), 900)
+    pairs = history_pairs(sample, max_pairs=max_pairs)
 
-    for idx, (user_text, action, args, result) in enumerate(history_pairs(sample, max_pairs=max_pairs), 1):
+    if layout == "legacy":
+        chunks = meta_chunks[:]
+        ordered_pairs = pairs
+    elif layout == "now_first":
+        # Truncation keeps the beginning of the sequence, so put the target prompt
+        # and the most recent state first. The older history can be sacrificed.
+        chunks = [now_chunk] + meta_chunks
+        ordered_pairs = list(reversed(pairs))
+    else:
+        raise ValueError(f"unknown transformer layout: {layout}")
+
+    for idx, (user_text, action, args, result) in enumerate(ordered_pairs, 1):
         chunks.append(f"[H{idx}] U: {user_text} >> A: {action} {args} => {result}")
 
-    chunks.append("[NOW] " + clean(sample.get("current_prompt"), 900))
+    if layout == "legacy":
+        chunks.append(now_chunk)
     return "\n".join(chunks)
 
 
@@ -273,6 +287,7 @@ def main():
     parser.add_argument("--model-out-dir", default=os.path.join("models", "transformer"))
     parser.add_argument("--max-len", type=int, default=320)
     parser.add_argument("--history-pairs", type=int, default=6)
+    parser.add_argument("--layout", choices=["now_first", "legacy"], default="now_first")
     parser.add_argument("--epochs", type=int, default=3)
     parser.add_argument("--batch-size", type=int, default=4)
     parser.add_argument("--eval-batch-size", type=int, default=16)
@@ -304,7 +319,7 @@ def main():
         samples = [samples[i] for i in idx]
         y = y[idx]
 
-    texts = [serialize_transformer(sample, max_pairs=args.history_pairs) for sample in samples]
+    texts = [serialize_transformer(sample, max_pairs=args.history_pairs, layout=args.layout) for sample in samples]
     groups = np.array([session_id(sample["id"]) for sample in samples])
 
     tokenizer = AutoTokenizer.from_pretrained(args.model_name, use_fast=False)
@@ -434,6 +449,7 @@ def main():
         "model_name": args.model_name,
         "max_len": args.max_len,
         "history_pairs": args.history_pairs,
+        "layout": args.layout,
         "loss_weight": args.loss_weight,
         "amp": args.amp,
         "model_dtype": args.model_dtype,
