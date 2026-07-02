@@ -72,6 +72,25 @@ def load_config(path):
         return yaml.safe_load(f)
 
 
+def apply_overrides(cfg, overrides):
+    for item in overrides or []:
+        if "=" not in item:
+            raise ValueError(f"override must be key=value: {item}")
+        key, value = item.split("=", 1)
+        if value.lower() in {"true", "false"}:
+            parsed = value.lower() == "true"
+        else:
+            try:
+                parsed = int(value)
+            except ValueError:
+                try:
+                    parsed = float(value)
+                except ValueError:
+                    parsed = value
+        cfg[key] = parsed
+    return cfg
+
+
 def split_samples(samples, fold_rows, fold):
     fold_of_id = {row["id"]: int(row["fold"]) for row in fold_rows}
     train, val = [], []
@@ -83,8 +102,8 @@ def split_samples(samples, fold_rows, fold):
     return train, val
 
 
-def tokenize_samples(samples, tokenizer, max_len, batch_size=512):
-    texts = [serialize_for_tokenizer(sample, tokenizer, max_len) for sample in samples]
+def tokenize_samples(samples, tokenizer, max_len, serializer="v1", batch_size=512):
+    texts = [serialize_for_tokenizer(sample, tokenizer, max_len, serializer) for sample in samples]
     encoded = tokenizer(
         texts,
         max_length=max_len,
@@ -175,9 +194,11 @@ def main():
     parser.add_argument("--fold-file", default="pipeline_v4/folds/fold_assignments.csv")
     parser.add_argument("--artifact-dir", default="pipeline_v4/artifacts")
     parser.add_argument("--epochs", type=int, default=None)
+    parser.add_argument("--override", action="append", default=[])
     args = parser.parse_args()
 
     cfg = load_config(args.config)
+    cfg = apply_overrides(cfg, args.override)
     if args.epochs is not None:
         cfg["epochs"] = args.epochs
     set_seed(int(cfg.get("seed", SEED)))
@@ -210,10 +231,11 @@ def main():
         "val_counts": dict(Counter(ID2LABEL[int(i)] for i in y_val)),
     }, ensure_ascii=False))
 
-    print("tokenizing train")
-    train_enc = tokenize_samples(train_samples, tokenizer, int(cfg["max_len"]))
-    print("tokenizing val")
-    val_enc = tokenize_samples(val_samples, tokenizer, int(cfg["max_len"]))
+    serializer = str(cfg.get("serializer", "v1"))
+    print(f"tokenizing train serializer={serializer}")
+    train_enc = tokenize_samples(train_samples, tokenizer, int(cfg["max_len"]), serializer)
+    print(f"tokenizing val serializer={serializer}")
+    val_enc = tokenize_samples(val_samples, tokenizer, int(cfg["max_len"]), serializer)
 
     train_loader = DataLoader(
         EncodedDataset(train_enc, y_train),
@@ -245,7 +267,14 @@ def main():
     )
     use_amp = device.type == "cuda" and bool(cfg.get("fp16", True))
     scaler = torch.amp.GradScaler("cuda", enabled=use_amp)
-    ce_fine = nn.CrossEntropyLoss(label_smoothing=float(cfg["label_smoothing"]))
+    class_weight = None
+    if str(cfg.get("class_weight", "none")) == "sqrt_inv_freq":
+        counts = np.bincount(y_train, minlength=len(ALL_CLASSES)).astype(np.float64)
+        weights = np.sqrt(counts.mean() / np.maximum(counts, 1.0))
+        weights = weights / weights.mean()
+        class_weight = torch.tensor(weights, dtype=torch.float32, device=device)
+        print("class_weight=sqrt_inv_freq " + json.dumps({ALL_CLASSES[i]: float(weights[i]) for i in range(len(ALL_CLASSES))}, ensure_ascii=False))
+    ce_fine = nn.CrossEntropyLoss(weight=class_weight, label_smoothing=float(cfg["label_smoothing"]))
     ce_coarse = nn.CrossEntropyLoss()
 
     best = {"fold_val_nll": float("inf"), "epoch": 0}
