@@ -290,3 +290,36 @@ Full transformer run:
 - Stronger than advanced router on class F1 for `grep_search`, `list_directory`, `glob_pattern`, `edit_file`, `write_file`, `apply_patch`, `respond_only`; weaker on execute/communicate classes.
 - Quick validation hybrid: advanced router `0.711324`; transformer alone `0.686816`; action-set override using transformer for its stronger classes reached Macro-F1 `0.719520`.
 - Interpretation: transformer is useful as complementary specialist/logit feature, not as a standalone replacement yet.
+
+## Policy Reconstruction Experiments
+- Finished: 2026-07-02
+- Plan: `C:\Users\kiros\Downloads\policy_reconstruction_experiment_plan_codex.md`
+- Report: `POLICY_RECONSTRUCTION_RESULTS.md`
+- New framework code: `src/` common utilities and `scripts/` audit/calibration/bias/blend scripts.
+
+Policy framing:
+- Treat the task as reconstructing `P(action | state)`, then separate three questions: ordinary generalization, replay/transductive behavior, and Macro-F1 decision optimization.
+- This matters because leaderboard `0.78` is unlikely to come from pure current-prompt TF-IDF. The useful signal is probably a mix of history serialization, class-specific specialists, probability calibration, and controlled transductive/replay behavior if rules allow it.
+
+Replay audit:
+- Session-scoped replay is perfect only inside the same session/batch: train internal precision `1.000000`, transductive valid precision `1.000000`.
+- GroupSplit train-to-valid session-scoped coverage is `0/14106`, so it does not explain safe hidden generalization.
+- Global prompt train-to-valid precision is only `0.432864`, so raw global exact prompt lookup is too risky as a primary rule.
+- Public placeholder test hits are `5/5`, but actual hidden submission did not improve, so the previous lookup package likely had no useful hidden hits.
+
+Policy ceiling / memorization audit:
+- Best exact-signature GroupKFold result is `S1_template_prompt` with bias tuning Macro-F1 `0.154695`.
+- Detailed signatures get worse because group-disjoint folds make exact states sparse/unseen.
+- Conclusion: exact state-signature memorization is not the route to `0.78`; it is mainly an anti-leak diagnostic.
+
+Transformer calibration and bias:
+- Full mDeBERTa validation Macro-F1: `0.686816`.
+- Temperature scaling improved log-loss `0.734426 -> 0.728853` and ECE `0.032505 -> 0.013945`.
+- Class-bias tuning improved transformer Macro-F1 `0.686816 -> 0.689963`.
+- Useful, but still below the linear advanced router.
+
+Best current validation decision:
+- Advanced router alone: Macro-F1 `0.711324`.
+- Transformer alone: Macro-F1 `0.686816`.
+- Advanced router + transformer stronger-class override: Macro-F1 `0.719520`, accuracy `0.718559`, `1462` predictions changed.
+- Current practical next step: train/save a full-data transformer checkpoint and build a submit variant that uses advanced router as the base, then overrides only on the transformer-strong action set.

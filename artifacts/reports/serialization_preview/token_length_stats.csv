@@ -1,0 +1,10 @@
+metric,value
+n,70000
+mean,299.1149857142857
+p50,307
+p90,472
+p95,507
+p99,573
+max,696
+over_max_len,33223
+now_missing_after_trunc,0

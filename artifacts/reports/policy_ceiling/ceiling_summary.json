@@ -1,0 +1,68 @@
+{
+  "rows": [
+    {
+      "level": "S0_raw_prompt",
+      "argmax_macro_f1": 0.1334828757639586,
+      "argmax_accuracy": 0.22087142857142858,
+      "bias_tuned_macro_f1": 0.14765045153467726,
+      "bias_tuned_accuracy": 0.18575714285714287,
+      "bias_history_last": 0.14765045153467726
+    },
+    {
+      "level": "S1_template_prompt",
+      "argmax_macro_f1": 0.1420603763909671,
+      "argmax_accuracy": 0.22572857142857142,
+      "bias_tuned_macro_f1": 0.15469500633083103,
+      "bias_tuned_accuracy": 0.18874285714285716,
+      "bias_history_last": 0.15469500633083103
+    },
+    {
+      "level": "S2_tpl_last1",
+      "argmax_macro_f1": 0.07228866459859637,
+      "argmax_accuracy": 0.18727142857142856,
+      "bias_tuned_macro_f1": 0.09035105372487506,
+      "bias_tuned_accuracy": 0.13814285714285715,
+      "bias_history_last": 0.09035105372487506
+    },
+    {
+      "level": "S3_tpl_last2",
+      "argmax_macro_f1": 0.04825767362738948,
+      "argmax_accuracy": 0.1732142857142857,
+      "bias_tuned_macro_f1": 0.06862973639050289,
+      "bias_tuned_accuracy": 0.12351428571428572,
+      "bias_history_last": 0.06862973639050289
+    },
+    {
+      "level": "S4_tpl_last2_result",
+      "argmax_macro_f1": 0.045867529570378616,
+      "argmax_accuracy": 0.17181428571428572,
+      "bias_tuned_macro_f1": 0.06638378587416506,
+      "bias_tuned_accuracy": 0.12202857142857143,
+      "bias_history_last": 0.06638378587416506
+    },
+    {
+      "level": "S5_tpl_last3_result_meta",
+      "argmax_macro_f1": 0.021295064359819055,
+      "argmax_accuracy": 0.16027142857142856,
+      "bias_tuned_macro_f1": 0.04192953001692819,
+      "bias_tuned_accuracy": 0.11048571428571428,
+      "bias_history_last": 0.04192953001692819
+    },
+    {
+      "level": "S6_tpl_last3_result_open_lang",
+      "argmax_macro_f1": 0.02031165112717245,
+      "argmax_accuracy": 0.15981428571428571,
+      "bias_tuned_macro_f1": 0.04109637091835327,
+      "bias_tuned_accuracy": 0.11,
+      "bias_history_last": 0.04109637091835327
+    }
+  ],
+  "best": {
+    "level": "S1_template_prompt",
+    "argmax_macro_f1": 0.1420603763909671,
+    "argmax_accuracy": 0.22572857142857142,
+    "bias_tuned_macro_f1": 0.15469500633083103,
+    "bias_tuned_accuracy": 0.18874285714285716,
+    "bias_history_last": 0.15469500633083103
+  }
+}

@@ -3,7 +3,7 @@ data/
 model/
 models/
 output/
-reports/
+/reports/
 
 # Submission packages and extracted submission folders
 *.zip

@@ -1,0 +1,16 @@
+{
+  "read_file": 0.10000000000000009,
+  "grep_search": 0.0,
+  "list_directory": 0.5,
+  "glob_pattern": -0.55,
+  "edit_file": -0.35,
+  "write_file": 0.0,
+  "apply_patch": 0.0,
+  "run_bash": 0.55,
+  "run_tests": 0.0,
+  "lint_or_typecheck": 0.0,
+  "ask_user": -0.09999999999999998,
+  "plan_task": 0.10000000000000009,
+  "web_search": 0.0,
+  "respond_only": 0.0
+}

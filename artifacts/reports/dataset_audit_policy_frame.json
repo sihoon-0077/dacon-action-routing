@@ -1,0 +1,1722 @@
+{
+  "basic": {
+    "train_rows": 70000,
+    "test_rows": 5,
+    "unique_train_sessions": 9429,
+    "turn_min": 1,
+    "turn_max": 18,
+    "history_len_min": 0,
+    "history_len_max": 12,
+    "missing_required_keys": 0,
+    "duplicated_current_prompt": 6743
+  },
+  "label_distribution": [
+    {
+      "action": "read_file",
+      "count": 9257,
+      "ratio": 0.13224285714285713
+    },
+    {
+      "action": "grep_search",
+      "count": 9912,
+      "ratio": 0.1416
+    },
+    {
+      "action": "list_directory",
+      "count": 4329,
+      "ratio": 0.061842857142857144
+    },
+    {
+      "action": "glob_pattern",
+      "count": 5284,
+      "ratio": 0.07548571428571428
+    },
+    {
+      "action": "edit_file",
+      "count": 11171,
+      "ratio": 0.15958571428571428
+    },
+    {
+      "action": "write_file",
+      "count": 1481,
+      "ratio": 0.021157142857142857
+    },
+    {
+      "action": "apply_patch",
+      "count": 4823,
+      "ratio": 0.0689
+    },
+    {
+      "action": "run_bash",
+      "count": 5068,
+      "ratio": 0.0724
+    },
+    {
+      "action": "run_tests",
+      "count": 4561,
+      "ratio": 0.06515714285714286
+    },
+    {
+      "action": "lint_or_typecheck",
+      "count": 2283,
+      "ratio": 0.032614285714285714
+    },
+    {
+      "action": "ask_user",
+      "count": 2701,
+      "ratio": 0.038585714285714286
+    },
+    {
+      "action": "plan_task",
+      "count": 2679,
+      "ratio": 0.038271428571428574
+    },
+    {
+      "action": "web_search",
+      "count": 1273,
+      "ratio": 0.018185714285714284
+    },
+    {
+      "action": "respond_only",
+      "count": 5178,
+      "ratio": 0.07397142857142858
+    }
+  ],
+  "group_distribution": [
+    {
+      "group": "communicate",
+      "count": 11831,
+      "ratio": 0.16901428571428573
+    },
+    {
+      "group": "execute",
+      "count": 11912,
+      "ratio": 0.17017142857142858
+    },
+    {
+      "group": "inspect",
+      "count": 28782,
+      "ratio": 0.4111714285714286
+    },
+    {
+      "group": "modify",
+      "count": 17475,
+      "ratio": 0.24964285714285714
+    }
+  ],
+  "result_bucket_distribution": [
+    [
+      "RESULT_OK",
+      43398
+    ],
+    [
+      "RESULT_EDITED RESULT_OK",
+      43355
+    ],
+    [
+      "RESULT_LISTED",
+      38609
+    ],
+    [
+      "RESULT_OTHER",
+      22987
+    ],
+    [
+      "RESULT_OK RESULT_READ",
+      19841
+    ],
+    [
+      "RESULT_ERROR",
+      16785
+    ],
+    [
+      "RESULT_EDITED RESULT_LISTED RESULT_OK",
+      12282
+    ],
+    [
+      "MATCH_COUNT_MID RESULT_MATCHES",
+      10922
+    ],
+    [
+      "MATCH_COUNT_MID RESULT_LISTED RESULT_MATCHES",
+      7402
+    ],
+    [
+      "MATCH_COUNT_HIGH RESULT_MATCHES",
+      6229
+    ],
+    [
+      "MATCH_COUNT_HIGH RESULT_LISTED RESULT_MATCHES",
+      4219
+    ],
+    [
+      "MATCH_COUNT_0 RESULT_MATCHES RESULT_NO_MATCH",
+      2870
+    ],
+    [
+      "RESULT_MATCHES RESULT_NO_MATCH",
+      2478
+    ],
+    [
+      "RESULT_ERROR RESULT_MATCHES RESULT_NO_MATCH",
+      2140
+    ],
+    [
+      "MATCH_COUNT_LOW RESULT_MATCHES",
+      1606
+    ],
+    [
+      "MATCH_COUNT_LOW RESULT_LISTED RESULT_MATCHES",
+      1377
+    ],
+    [
+      "RESULT_ERROR RESULT_LISTED",
+      1155
+    ],
+    [
+      "RESULT_MATCHES",
+      943
+    ],
+    [
+      "RESULT_ERROR RESULT_MATCHES",
+      934
+    ],
+    [
+      "MATCH_COUNT_MID RESULT_LISTED RESULT_MATCHES RESULT_NO_MATCH",
+      803
+    ],
+    [
+      "MATCH_COUNT_HIGH RESULT_LISTED RESULT_MATCHES RESULT_NO_MATCH",
+      421
+    ],
+    [
+      "MATCH_COUNT_MID RESULT_ERROR RESULT_MATCHES",
+      314
+    ],
+    [
+      "RESULT_ERROR RESULT_OK",
+      285
+    ],
+    [
+      "MATCH_COUNT_HIGH RESULT_ERROR RESULT_MATCHES",
+      243
+    ],
+    [
+      "MATCH_COUNT_MID RESULT_MATCHES RESULT_OK",
+      223
+    ],
+    [
+      "RESULT_LISTED RESULT_OK",
+      160
+    ],
+    [
+      "MATCH_COUNT_HIGH RESULT_MATCHES RESULT_OK",
+      123
+    ],
+    [
+      "MATCH_COUNT_0 RESULT_MATCHES",
+      111
+    ],
+    [
+      "RESULT_MATCHES RESULT_NO_MATCH RESULT_OK",
+      106
+    ],
+    [
+      "MATCH_COUNT_MID RESULT_MATCHES RESULT_NO_MATCH",
+      56
+    ],
+    [
+      "MATCH_COUNT_LOW RESULT_MATCHES RESULT_OK",
+      47
+    ],
+    [
+      "MATCH_COUNT_HIGH RESULT_MATCHES RESULT_NO_MATCH",
+      36
+    ],
+    [
+      "RESULT_MATCHES RESULT_OK",
+      34
+    ],
+    [
+      "MATCH_COUNT_LOW RESULT_ERROR RESULT_MATCHES",
+      24
+    ],
+    [
+      "RESULT_EDITED RESULT_ERROR RESULT_OK",
+      12
+    ],
+    [
+      "RESULT_EDITED RESULT_MATCHES RESULT_OK",
+      2
+    ]
+  ],
+  "ambiguity": [
+    {
+      "level": "S0_raw_prompt",
+      "num_keys": 63250,
+      "covered_rows": 70000,
+      "mean_support": 1.1067193675889329,
+      "median_support": 1.0,
+      "mean_entropy": 0.03666014099433422,
+      "mean_top1_ratio": 0.9836178271004358,
+      "keys_top1_ge_0_9": 61029,
+      "keys_multiple_labels": 2221
+    },
+    {
+      "level": "S1_template_prompt",
+      "num_keys": 62644,
+      "covered_rows": 70000,
+      "mean_support": 1.1174254517591469,
+      "median_support": 1.0,
+      "mean_entropy": 0.04198667177741177,
+      "mean_top1_ratio": 0.9811263259706048,
+      "keys_top1_ge_0_9": 60120,
+      "keys_multiple_labels": 2524
+    },
+    {
+      "level": "S2_tpl_last1",
+      "num_keys": 67880,
+      "covered_rows": 70000,
+      "mean_support": 1.0312315851502651,
+      "median_support": 1.0,
+      "mean_entropy": 0.007082858983360992,
+      "mean_top1_ratio": 0.9965509044906512,
+      "keys_top1_ge_0_9": 67400,
+      "keys_multiple_labels": 480
+    },
+    {
+      "level": "S3_tpl_last2",
+      "num_keys": 69140,
+      "covered_rows": 70000,
+      "mean_support": 1.01243853051779,
+      "median_support": 1.0,
+      "mean_entropy": 0.0022725692583768333,
+      "mean_top1_ratio": 0.998905120046283,
+      "keys_top1_ge_0_9": 68984,
+      "keys_multiple_labels": 156
+    },
+    {
+      "level": "S4_tpl_last2_result",
+      "num_keys": 69227,
+      "covered_rows": 70000,
+      "mean_support": 1.0111661634911233,
+      "median_support": 1.0,
+      "mean_entropy": 0.0020674800081496273,
+      "mean_top1_ratio": 0.999007612636688,
+      "keys_top1_ge_0_9": 69085,
+      "keys_multiple_labels": 142
+    },
+    {
+      "level": "S5_tpl_last3_result_meta",
+      "num_keys": 69960,
+      "covered_rows": 70000,
+      "mean_support": 1.0005717552887363,
+      "median_support": 1.0,
+      "mean_entropy": 0.00018582046883933677,
+      "mean_top1_ratio": 0.9999070897655803,
+      "keys_top1_ge_0_9": 69947,
+      "keys_multiple_labels": 13
+    },
+    {
+      "level": "S6_tpl_last3_result_open_lang",
+      "num_keys": 69981,
+      "covered_rows": 70000,
+      "mean_support": 1.0002715022649005,
+      "median_support": 1.0,
+      "mean_entropy": 0.00010002715022649004,
+      "mean_top1_ratio": 0.9999499864248867,
+      "keys_top1_ge_0_9": 69974,
+      "keys_multiple_labels": 7
+    }
+  ],
+  "transitions": {
+    "last_action_to_action_top": [
+      {
+        "last_action": "read_file",
+        "action": "edit_file",
+        "count": 2577
+      },
+      {
+        "last_action": "edit_file",
+        "action": "run_tests",
+        "count": 2444
+      },
+      {
+        "last_action": "grep_search",
+        "action": "edit_file",
+        "count": 2065
+      },
+      {
+        "last_action": "grep_search",
+        "action": "read_file",
+        "count": 1819
+      },
+      {
+        "last_action": "NONE",
+        "action": "list_directory",
+        "count": 1818
+      },
+      {
+        "last_action": "grep_search",
+        "action": "grep_search",
+        "count": 1726
+      },
+      {
+        "last_action": "edit_file",
+        "action": "edit_file",
+        "count": 1638
+      },
+      {
+        "last_action": "NONE",
+        "action": "read_file",
+        "count": 1488
+      },
+      {
+        "last_action": "read_file",
+        "action": "grep_search",
+        "count": 1331
+      },
+      {
+        "last_action": "read_file",
+        "action": "read_file",
+        "count": 1240
+      },
+      {
+        "last_action": "grep_search",
+        "action": "glob_pattern",
+        "count": 1181
+      },
+      {
+        "last_action": "NONE",
+        "action": "plan_task",
+        "count": 1121
+      },
+      {
+        "last_action": "glob_pattern",
+        "action": "grep_search",
+        "count": 1102
+      },
+      {
+        "last_action": "edit_file",
+        "action": "apply_patch",
+        "count": 1076
+      },
+      {
+        "last_action": "list_directory",
+        "action": "read_file",
+        "count": 1059
+      },
+      {
+        "last_action": "NONE",
+        "action": "grep_search",
+        "count": 1046
+      },
+      {
+        "last_action": "run_tests",
+        "action": "edit_file",
+        "count": 1040
+      },
+      {
+        "last_action": "edit_file",
+        "action": "respond_only",
+        "count": 1018
+      },
+      {
+        "last_action": "NONE",
+        "action": "run_bash",
+        "count": 1011
+      },
+      {
+        "last_action": "edit_file",
+        "action": "grep_search",
+        "count": 996
+      },
+      {
+        "last_action": "run_bash",
+        "action": "run_bash",
+        "count": 978
+      },
+      {
+        "last_action": "list_directory",
+        "action": "grep_search",
+        "count": 907
+      },
+      {
+        "last_action": "run_bash",
+        "action": "edit_file",
+        "count": 878
+      },
+      {
+        "last_action": "glob_pattern",
+        "action": "glob_pattern",
+        "count": 872
+      },
+      {
+        "last_action": "run_tests",
+        "action": "respond_only",
+        "count": 774
+      },
+      {
+        "last_action": "glob_pattern",
+        "action": "read_file",
+        "count": 771
+      },
+      {
+        "last_action": "read_file",
+        "action": "apply_patch",
+        "count": 770
+      },
+      {
+        "last_action": "apply_patch",
+        "action": "lint_or_typecheck",
+        "count": 757
+      },
+      {
+        "last_action": "edit_file",
+        "action": "run_bash",
+        "count": 739
+      },
+      {
+        "last_action": "edit_file",
+        "action": "lint_or_typecheck",
+        "count": 727
+      },
+      {
+        "last_action": "apply_patch",
+        "action": "respond_only",
+        "count": 713
+      },
+      {
+        "last_action": "NONE",
+        "action": "write_file",
+        "count": 708
+      },
+      {
+        "last_action": "apply_patch",
+        "action": "apply_patch",
+        "count": 689
+      },
+      {
+        "last_action": "apply_patch",
+        "action": "run_tests",
+        "count": 655
+      },
+      {
+        "last_action": "edit_file",
+        "action": "read_file",
+        "count": 647
+      },
+      {
+        "last_action": "glob_pattern",
+        "action": "edit_file",
+        "count": 643
+      },
+      {
+        "last_action": "NONE",
+        "action": "ask_user",
+        "count": 629
+      },
+      {
+        "last_action": "write_file",
+        "action": "edit_file",
+        "count": 584
+      },
+      {
+        "last_action": "NONE",
+        "action": "glob_pattern",
+        "count": 567
+      },
+      {
+        "last_action": "read_file",
+        "action": "glob_pattern",
+        "count": 562
+      },
+      {
+        "last_action": "edit_file",
+        "action": "glob_pattern",
+        "count": 559
+      },
+      {
+        "last_action": "read_file",
+        "action": "respond_only",
+        "count": 558
+      },
+      {
+        "last_action": "run_bash",
+        "action": "read_file",
+        "count": 550
+      },
+      {
+        "last_action": "run_bash",
+        "action": "grep_search",
+        "count": 547
+      },
+      {
+        "last_action": "run_tests",
+        "action": "grep_search",
+        "count": 547
+      },
+      {
+        "last_action": "read_file",
+        "action": "run_bash",
+        "count": 537
+      },
+      {
+        "last_action": "grep_search",
+        "action": "respond_only",
+        "count": 531
+      },
+      {
+        "last_action": "grep_search",
+        "action": "apply_patch",
+        "count": 523
+      },
+      {
+        "last_action": "lint_or_typecheck",
+        "action": "apply_patch",
+        "count": 502
+      },
+      {
+        "last_action": "run_tests",
+        "action": "run_tests",
+        "count": 466
+      },
+      {
+        "last_action": "plan_task",
+        "action": "apply_patch",
+        "count": 466
+      },
+      {
+        "last_action": "list_directory",
+        "action": "glob_pattern",
+        "count": 444
+      },
+      {
+        "last_action": "apply_patch",
+        "action": "grep_search",
+        "count": 443
+      },
+      {
+        "last_action": "ask_user",
+        "action": "grep_search",
+        "count": 439
+      },
+      {
+        "last_action": "plan_task",
+        "action": "read_file",
+        "count": 436
+      },
+      {
+        "last_action": "lint_or_typecheck",
+        "action": "edit_file",
+        "count": 436
+      },
+      {
+        "last_action": "plan_task",
+        "action": "list_directory",
+        "count": 429
+      },
+      {
+        "last_action": "run_bash",
+        "action": "respond_only",
+        "count": 422
+      },
+      {
+        "last_action": "plan_task",
+        "action": "grep_search",
+        "count": 415
+      },
+      {
+        "last_action": "write_file",
+        "action": "run_bash",
+        "count": 415
+      },
+      {
+        "last_action": "glob_pattern",
+        "action": "respond_only",
+        "count": 404
+      },
+      {
+        "last_action": "run_tests",
+        "action": "apply_patch",
+        "count": 386
+      },
+      {
+        "last_action": "grep_search",
+        "action": "run_bash",
+        "count": 372
+      },
+      {
+        "last_action": "read_file",
+        "action": "ask_user",
+        "count": 370
+      },
+      {
+        "last_action": "list_directory",
+        "action": "edit_file",
+        "count": 370
+      },
+      {
+        "last_action": "list_directory",
+        "action": "write_file",
+        "count": 368
+      },
+      {
+        "last_action": "list_directory",
+        "action": "list_directory",
+        "count": 356
+      },
+      {
+        "last_action": "glob_pattern",
+        "action": "list_directory",
+        "count": 343
+      },
+      {
+        "last_action": "edit_file",
+        "action": "ask_user",
+        "count": 342
+      },
+      {
+        "last_action": "run_bash",
+        "action": "list_directory",
+        "count": 339
+      },
+      {
+        "last_action": "ask_user",
+        "action": "read_file",
+        "count": 335
+      },
+      {
+        "last_action": "ask_user",
+        "action": "edit_file",
+        "count": 309
+      },
+      {
+        "last_action": "run_tests",
+        "action": "read_file",
+        "count": 300
+      },
+      {
+        "last_action": "ask_user",
+        "action": "plan_task",
+        "count": 285
+      },
+      {
+        "last_action": "grep_search",
+        "action": "ask_user",
+        "count": 278
+      },
+      {
+        "last_action": "apply_patch",
+        "action": "run_bash",
+        "count": 277
+      },
+      {
+        "last_action": "read_file",
+        "action": "web_search",
+        "count": 272
+      },
+      {
+        "last_action": "grep_search",
+        "action": "web_search",
+        "count": 253
+      },
+      {
+        "last_action": "apply_patch",
+        "action": "read_file",
+        "count": 241
+      },
+      {
+        "last_action": "ask_user",
+        "action": "list_directory",
+        "count": 239
+      }
+    ],
+    "last_group_to_group_top": [
+      {
+        "last_group": "inspect",
+        "group": "inspect",
+        "count": 14028
+      },
+      {
+        "last_group": "inspect",
+        "group": "modify",
+        "count": 7660
+      },
+      {
+        "last_group": "modify",
+        "group": "execute",
+        "count": 6092
+      },
+      {
+        "last_group": "NONE",
+        "group": "inspect",
+        "count": 4919
+      },
+      {
+        "last_group": "modify",
+        "group": "modify",
+        "count": 4138
+      },
+      {
+        "last_group": "inspect",
+        "group": "communicate",
+        "count": 3907
+      },
+      {
+        "last_group": "modify",
+        "group": "inspect",
+        "count": 3532
+      },
+      {
+        "last_group": "execute",
+        "group": "modify",
+        "count": 3498
+      },
+      {
+        "last_group": "communicate",
+        "group": "inspect",
+        "count": 3156
+      },
+      {
+        "last_group": "execute",
+        "group": "inspect",
+        "count": 3147
+      },
+      {
+        "last_group": "modify",
+        "group": "communicate",
+        "count": 2721
+      },
+      {
+        "last_group": "execute",
+        "group": "execute",
+        "count": 2441
+      },
+      {
+        "last_group": "execute",
+        "group": "communicate",
+        "count": 1978
+      },
+      {
+        "last_group": "NONE",
+        "group": "communicate",
+        "count": 1936
+      },
+      {
+        "last_group": "inspect",
+        "group": "execute",
+        "count": 1894
+      },
+      {
+        "last_group": "communicate",
+        "group": "communicate",
+        "count": 1289
+      },
+      {
+        "last_group": "communicate",
+        "group": "modify",
+        "count": 1237
+      },
+      {
+        "last_group": "NONE",
+        "group": "execute",
+        "count": 1203
+      },
+      {
+        "last_group": "NONE",
+        "group": "modify",
+        "count": 942
+      },
+      {
+        "last_group": "communicate",
+        "group": "execute",
+        "count": 282
+      }
+    ],
+    "result_to_action_top": [
+      {
+        "result_bucket": "RESULT_OK",
+        "action": "edit_file",
+        "count": 2568
+      },
+      {
+        "result_bucket": "RESULT_EDITED RESULT_OK",
+        "action": "run_tests",
+        "count": 2276
+      },
+      {
+        "result_bucket": "RESULT_EDITED RESULT_OK",
+        "action": "edit_file",
+        "count": 2081
+      },
+      {
+        "result_bucket": "RESULT_LISTED",
+        "action": "grep_search",
+        "count": 1967
+      },
+      {
+        "result_bucket": "RESULT_NONE",
+        "action": "list_directory",
+        "count": 1818
+      },
+      {
+        "result_bucket": "RESULT_LISTED",
+        "action": "read_file",
+        "count": 1788
+      },
+      {
+        "result_bucket": "RESULT_OK",
+        "action": "respond_only",
+        "count": 1574
+      },
+      {
+        "result_bucket": "RESULT_NONE",
+        "action": "read_file",
+        "count": 1488
+      },
+      {
+        "result_bucket": "RESULT_OK RESULT_READ",
+        "action": "edit_file",
+        "count": 1405
+      },
+      {
+        "result_bucket": "RESULT_OK",
+        "action": "grep_search",
+        "count": 1395
+      },
+      {
+        "result_bucket": "RESULT_LISTED",
+        "action": "glob_pattern",
+        "count": 1289
+      },
+      {
+        "result_bucket": "RESULT_OK",
+        "action": "run_bash",
+        "count": 1184
+      },
+      {
+        "result_bucket": "RESULT_NONE",
+        "action": "plan_task",
+        "count": 1121
+      },
+      {
+        "result_bucket": "RESULT_EDITED RESULT_OK",
+        "action": "run_bash",
+        "count": 1111
+      },
+      {
+        "result_bucket": "RESULT_OK",
+        "action": "read_file",
+        "count": 1107
+      },
+      {
+        "result_bucket": "RESULT_EDITED RESULT_OK",
+        "action": "respond_only",
+        "count": 1065
+      },
+      {
+        "result_bucket": "RESULT_NONE",
+        "action": "grep_search",
+        "count": 1046
+      },
+      {
+        "result_bucket": "RESULT_NONE",
+        "action": "run_bash",
+        "count": 1011
+      },
+      {
+        "result_bucket": "RESULT_LISTED",
+        "action": "edit_file",
+        "count": 998
+      },
+      {
+        "result_bucket": "RESULT_EDITED RESULT_OK",
+        "action": "apply_patch",
+        "count": 992
+      },
+      {
+        "result_bucket": "RESULT_OTHER",
+        "action": "grep_search",
+        "count": 928
+      },
+      {
+        "result_bucket": "RESULT_EDITED RESULT_OK",
+        "action": "grep_search",
+        "count": 901
+      },
+      {
+        "result_bucket": "RESULT_OK",
+        "action": "apply_patch",
+        "count": 895
+      },
+      {
+        "result_bucket": "RESULT_OTHER",
+        "action": "read_file",
+        "count": 852
+      },
+      {
+        "result_bucket": "RESULT_ERROR",
+        "action": "edit_file",
+        "count": 851
+      },
+      {
+        "result_bucket": "RESULT_NONE",
+        "action": "write_file",
+        "count": 708
+      },
+      {
+        "result_bucket": "RESULT_EDITED RESULT_LISTED RESULT_OK",
+        "action": "respond_only",
+        "count": 705
+      },
+      {
+        "result_bucket": "RESULT_OK RESULT_READ",
+        "action": "grep_search",
+        "count": 697
+      },
+      {
+        "result_bucket": "RESULT_OTHER",
+        "action": "list_directory",
+        "count": 690
+      },
+      {
+        "result_bucket": "RESULT_LISTED",
+        "action": "list_directory",
+        "count": 687
+      },
+      {
+        "result_bucket": "RESULT_EDITED RESULT_OK",
+        "action": "lint_or_typecheck",
+        "count": 685
+      },
+      {
+        "result_bucket": "RESULT_OK",
+        "action": "run_tests",
+        "count": 682
+      },
+      {
+        "result_bucket": "RESULT_EDITED RESULT_LISTED RESULT_OK",
+        "action": "lint_or_typecheck",
+        "count": 664
+      },
+      {
+        "result_bucket": "RESULT_EDITED RESULT_OK",
+        "action": "read_file",
+        "count": 663
+      },
+      {
+        "result_bucket": "RESULT_OK RESULT_READ",
+        "action": "read_file",
+        "count": 655
+      },
+      {
+        "result_bucket": "RESULT_NONE",
+        "action": "ask_user",
+        "count": 629
+      },
+      {
+        "result_bucket": "RESULT_ERROR",
+        "action": "grep_search",
+        "count": 626
+      },
+      {
+        "result_bucket": "MATCH_COUNT_MID RESULT_MATCHES",
+        "action": "edit_file",
+        "count": 602
+      },
+      {
+        "result_bucket": "RESULT_EDITED RESULT_LISTED RESULT_OK",
+        "action": "apply_patch",
+        "count": 576
+      },
+      {
+        "result_bucket": "RESULT_NONE",
+        "action": "glob_pattern",
+        "count": 567
+      },
+      {
+        "result_bucket": "MATCH_COUNT_MID RESULT_MATCHES",
+        "action": "grep_search",
+        "count": 560
+      },
+      {
+        "result_bucket": "RESULT_EDITED RESULT_LISTED RESULT_OK",
+        "action": "run_tests",
+        "count": 547
+      },
+      {
+        "result_bucket": "RESULT_OTHER",
+        "action": "apply_patch",
+        "count": 535
+      },
+      {
+        "result_bucket": "RESULT_LISTED",
+        "action": "respond_only",
+        "count": 507
+      },
+      {
+        "result_bucket": "RESULT_EDITED RESULT_OK",
+        "action": "glob_pattern",
+        "count": 507
+      },
+      {
+        "result_bucket": "RESULT_ERROR",
+        "action": "apply_patch",
+        "count": 506
+      },
+      {
+        "result_bucket": "RESULT_OK",
+        "action": "glob_pattern",
+        "count": 495
+      },
+      {
+        "result_bucket": "MATCH_COUNT_MID RESULT_MATCHES",
+        "action": "read_file",
+        "count": 495
+      },
+      {
+        "result_bucket": "RESULT_OTHER",
+        "action": "plan_task",
+        "count": 471
+      },
+      {
+        "result_bucket": "RESULT_ERROR",
+        "action": "read_file",
+        "count": 470
+      },
+      {
+        "result_bucket": "RESULT_LISTED",
+        "action": "write_file",
+        "count": 470
+      },
+      {
+        "result_bucket": "RESULT_OTHER",
+        "action": "glob_pattern",
+        "count": 445
+      },
+      {
+        "result_bucket": "RESULT_OK RESULT_READ",
+        "action": "apply_patch",
+        "count": 426
+      },
+      {
+        "result_bucket": "RESULT_OTHER",
+        "action": "edit_file",
+        "count": 426
+      },
+      {
+        "result_bucket": "RESULT_OK",
+        "action": "ask_user",
+        "count": 413
+      },
+      {
+        "result_bucket": "MATCH_COUNT_MID RESULT_LISTED RESULT_MATCHES",
+        "action": "read_file",
+        "count": 411
+      },
+      {
+        "result_bucket": "RESULT_OK",
+        "action": "list_directory",
+        "count": 411
+      },
+      {
+        "result_bucket": "RESULT_OK",
+        "action": "lint_or_typecheck",
+        "count": 388
+      },
+      {
+        "result_bucket": "MATCH_COUNT_MID RESULT_LISTED RESULT_MATCHES",
+        "action": "edit_file",
+        "count": 371
+      },
+      {
+        "result_bucket": "RESULT_ERROR",
+        "action": "run_tests",
+        "count": 358
+      },
+      {
+        "result_bucket": "RESULT_EDITED RESULT_LISTED RESULT_OK",
+        "action": "grep_search",
+        "count": 349
+      },
+      {
+        "result_bucket": "RESULT_OK RESULT_READ",
+        "action": "respond_only",
+        "count": 349
+      },
+      {
+        "result_bucket": "RESULT_EDITED RESULT_OK",
+        "action": "ask_user",
+        "count": 348
+      },
+      {
+        "result_bucket": "MATCH_COUNT_HIGH RESULT_MATCHES",
+        "action": "edit_file",
+        "count": 347
+      },
+      {
+        "result_bucket": "RESULT_LISTED",
+        "action": "ask_user",
+        "count": 340
+      },
+      {
+        "result_bucket": "RESULT_OK RESULT_READ",
+        "action": "run_bash",
+        "count": 330
+      },
+      {
+        "result_bucket": "MATCH_COUNT_MID RESULT_LISTED RESULT_MATCHES",
+        "action": "grep_search",
+        "count": 322
+      },
+      {
+        "result_bucket": "RESULT_OK RESULT_READ",
+        "action": "glob_pattern",
+        "count": 320
+      },
+      {
+        "result_bucket": "MATCH_COUNT_HIGH RESULT_MATCHES",
+        "action": "grep_search",
+        "count": 304
+      },
+      {
+        "result_bucket": "RESULT_LISTED",
+        "action": "run_bash",
+        "count": 297
+      },
+      {
+        "result_bucket": "MATCH_COUNT_MID RESULT_MATCHES",
+        "action": "glob_pattern",
+        "count": 280
+      },
+      {
+        "result_bucket": "RESULT_ERROR",
+        "action": "run_bash",
+        "count": 266
+      },
+      {
+        "result_bucket": "MATCH_COUNT_HIGH RESULT_MATCHES",
+        "action": "read_file",
+        "count": 261
+      },
+      {
+        "result_bucket": "RESULT_EDITED RESULT_LISTED RESULT_OK",
+        "action": "run_bash",
+        "count": 236
+      },
+      {
+        "result_bucket": "RESULT_ERROR",
+        "action": "glob_pattern",
+        "count": 234
+      },
+      {
+        "result_bucket": "RESULT_LISTED",
+        "action": "plan_task",
+        "count": 230
+      },
+      {
+        "result_bucket": "MATCH_COUNT_MID RESULT_MATCHES",
+        "action": "respond_only",
+        "count": 229
+      },
+      {
+        "result_bucket": "RESULT_NONE",
+        "action": "edit_file",
+        "count": 228
+      },
+      {
+        "result_bucket": "RESULT_ERROR",
+        "action": "lint_or_typecheck",
+        "count": 224
+      },
+      {
+        "result_bucket": "MATCH_COUNT_HIGH RESULT_LISTED RESULT_MATCHES",
+        "action": "edit_file",
+        "count": 222
+      }
+    ],
+    "last_action_result_to_action_top": [
+      {
+        "last_action": "edit_file",
+        "result_bucket": "RESULT_EDITED RESULT_OK",
+        "action": "run_tests",
+        "count": 2227
+      },
+      {
+        "last_action": "NONE",
+        "result_bucket": "RESULT_NONE",
+        "action": "list_directory",
+        "count": 1818
+      },
+      {
+        "last_action": "edit_file",
+        "result_bucket": "RESULT_EDITED RESULT_OK",
+        "action": "edit_file",
+        "count": 1496
+      },
+      {
+        "last_action": "NONE",
+        "result_bucket": "RESULT_NONE",
+        "action": "read_file",
+        "count": 1488
+      },
+      {
+        "last_action": "read_file",
+        "result_bucket": "RESULT_OK RESULT_READ",
+        "action": "edit_file",
+        "count": 1405
+      },
+      {
+        "last_action": "NONE",
+        "result_bucket": "RESULT_NONE",
+        "action": "plan_task",
+        "count": 1121
+      },
+      {
+        "last_action": "read_file",
+        "result_bucket": "RESULT_OK",
+        "action": "edit_file",
+        "count": 1071
+      },
+      {
+        "last_action": "glob_pattern",
+        "result_bucket": "RESULT_LISTED",
+        "action": "grep_search",
+        "count": 1068
+      },
+      {
+        "last_action": "list_directory",
+        "result_bucket": "RESULT_LISTED",
+        "action": "read_file",
+        "count": 1047
+      },
+      {
+        "last_action": "NONE",
+        "result_bucket": "RESULT_NONE",
+        "action": "grep_search",
+        "count": 1046
+      },
+      {
+        "last_action": "edit_file",
+        "result_bucket": "RESULT_EDITED RESULT_OK",
+        "action": "respond_only",
+        "count": 1012
+      },
+      {
+        "last_action": "NONE",
+        "result_bucket": "RESULT_NONE",
+        "action": "run_bash",
+        "count": 1011
+      },
+      {
+        "last_action": "edit_file",
+        "result_bucket": "RESULT_EDITED RESULT_OK",
+        "action": "apply_patch",
+        "count": 986
+      },
+      {
+        "last_action": "list_directory",
+        "result_bucket": "RESULT_LISTED",
+        "action": "grep_search",
+        "count": 899
+      },
+      {
+        "last_action": "glob_pattern",
+        "result_bucket": "RESULT_LISTED",
+        "action": "glob_pattern",
+        "count": 848
+      },
+      {
+        "last_action": "edit_file",
+        "result_bucket": "RESULT_EDITED RESULT_OK",
+        "action": "grep_search",
+        "count": 846
+      },
+      {
+        "last_action": "run_bash",
+        "result_bucket": "RESULT_OK",
+        "action": "run_bash",
+        "count": 813
+      },
+      {
+        "last_action": "run_tests",
+        "result_bucket": "RESULT_OK",
+        "action": "respond_only",
+        "count": 763
+      },
+      {
+        "last_action": "glob_pattern",
+        "result_bucket": "RESULT_LISTED",
+        "action": "read_file",
+        "count": 741
+      },
+      {
+        "last_action": "NONE",
+        "result_bucket": "RESULT_NONE",
+        "action": "write_file",
+        "count": 708
+      },
+      {
+        "last_action": "apply_patch",
+        "result_bucket": "RESULT_EDITED RESULT_LISTED RESULT_OK",
+        "action": "respond_only",
+        "count": 705
+      },
+      {
+        "last_action": "read_file",
+        "result_bucket": "RESULT_OK RESULT_READ",
+        "action": "grep_search",
+        "count": 697
+      },
+      {
+        "last_action": "edit_file",
+        "result_bucket": "RESULT_EDITED RESULT_OK",
+        "action": "run_bash",
+        "count": 696
+      },
+      {
+        "last_action": "run_bash",
+        "result_bucket": "RESULT_OK",
+        "action": "edit_file",
+        "count": 694
+      },
+      {
+        "last_action": "apply_patch",
+        "result_bucket": "RESULT_EDITED RESULT_LISTED RESULT_OK",
+        "action": "lint_or_typecheck",
+        "count": 660
+      },
+      {
+        "last_action": "edit_file",
+        "result_bucket": "RESULT_EDITED RESULT_OK",
+        "action": "lint_or_typecheck",
+        "count": 656
+      },
+      {
+        "last_action": "read_file",
+        "result_bucket": "RESULT_OK RESULT_READ",
+        "action": "read_file",
+        "count": 654
+      },
+      {
+        "last_action": "NONE",
+        "result_bucket": "RESULT_NONE",
+        "action": "ask_user",
+        "count": 629
+      },
+      {
+        "last_action": "glob_pattern",
+        "result_bucket": "RESULT_LISTED",
+        "action": "edit_file",
+        "count": 629
+      },
+      {
+        "last_action": "run_tests",
+        "result_bucket": "RESULT_OK",
+        "action": "edit_file",
+        "count": 589
+      },
+      {
+        "last_action": "write_file",
+        "result_bucket": "RESULT_EDITED RESULT_OK",
+        "action": "edit_file",
+        "count": 584
+      },
+      {
+        "last_action": "apply_patch",
+        "result_bucket": "RESULT_EDITED RESULT_LISTED RESULT_OK",
+        "action": "apply_patch",
+        "count": 576
+      },
+      {
+        "last_action": "NONE",
+        "result_bucket": "RESULT_NONE",
+        "action": "glob_pattern",
+        "count": 567
+      },
+      {
+        "last_action": "edit_file",
+        "result_bucket": "RESULT_EDITED RESULT_OK",
+        "action": "read_file",
+        "count": 558
+      },
+      {
+        "last_action": "apply_patch",
+        "result_bucket": "RESULT_EDITED RESULT_LISTED RESULT_OK",
+        "action": "run_tests",
+        "count": 547
+      },
+      {
+        "last_action": "read_file",
+        "result_bucket": "RESULT_OK",
+        "action": "grep_search",
+        "count": 539
+      },
+      {
+        "last_action": "read_file",
+        "result_bucket": "RESULT_OK",
+        "action": "read_file",
+        "count": 503
+      },
+      {
+        "last_action": "edit_file",
+        "result_bucket": "RESULT_EDITED RESULT_OK",
+        "action": "glob_pattern",
+        "count": 481
+      },
+      {
+        "last_action": "grep_search",
+        "result_bucket": "MATCH_COUNT_MID RESULT_MATCHES",
+        "action": "edit_file",
+        "count": 475
+      },
+      {
+        "last_action": "plan_task",
+        "result_bucket": "RESULT_OTHER",
+        "action": "apply_patch",
+        "count": 466
+      },
+      {
+        "last_action": "run_tests",
+        "result_bucket": "RESULT_ERROR",
+        "action": "edit_file",
+        "count": 447
+      },
+      {
+        "last_action": "grep_search",
+        "result_bucket": "MATCH_COUNT_MID RESULT_MATCHES",
+        "action": "grep_search",
+        "count": 447
+      },
+      {
+        "last_action": "list_directory",
+        "result_bucket": "RESULT_LISTED",
+        "action": "glob_pattern",
+        "count": 441
+      },
+      {
+        "last_action": "ask_user",
+        "result_bucket": "RESULT_OTHER",
+        "action": "grep_search",
+        "count": 439
+      },
+      {
+        "last_action": "plan_task",
+        "result_bucket": "RESULT_OTHER",
+        "action": "read_file",
+        "count": 436
+      },
+      {
+        "last_action": "plan_task",
+        "result_bucket": "RESULT_OTHER",
+        "action": "list_directory",
+        "count": 429
+      },
+      {
+        "last_action": "read_file",
+        "result_bucket": "RESULT_OK RESULT_READ",
+        "action": "apply_patch",
+        "count": 426
+      },
+      {
+        "last_action": "plan_task",
+        "result_bucket": "RESULT_OTHER",
+        "action": "grep_search",
+        "count": 415
+      },
+      {
+        "last_action": "write_file",
+        "result_bucket": "RESULT_EDITED RESULT_OK",
+        "action": "run_bash",
+        "count": 415
+      },
+      {
+        "last_action": "run_bash",
+        "result_bucket": "RESULT_OK",
+        "action": "respond_only",
+        "count": 415
+      },
+      {
+        "last_action": "grep_search",
+        "result_bucket": "MATCH_COUNT_MID RESULT_MATCHES",
+        "action": "read_file",
+        "count": 413
+      },
+      {
+        "last_action": "grep_search",
+        "result_bucket": "MATCH_COUNT_MID RESULT_LISTED RESULT_MATCHES",
+        "action": "read_file",
+        "count": 411
+      },
+      {
+        "last_action": "glob_pattern",
+        "result_bucket": "RESULT_LISTED",
+        "action": "respond_only",
+        "count": 388
+      },
+      {
+        "last_action": "run_bash",
+        "result_bucket": "RESULT_OK",
+        "action": "read_file",
+        "count": 385
+      },
+      {
+        "last_action": "run_bash",
+        "result_bucket": "RESULT_OK",
+        "action": "grep_search",
+        "count": 377
+      },
+      {
+        "last_action": "grep_search",
+        "result_bucket": "MATCH_COUNT_MID RESULT_LISTED RESULT_MATCHES",
+        "action": "edit_file",
+        "count": 371
+      },
+      {
+        "last_action": "list_directory",
+        "result_bucket": "RESULT_LISTED",
+        "action": "edit_file",
+        "count": 368
+      },
+      {
+        "last_action": "list_directory",
+        "result_bucket": "RESULT_LISTED",
+        "action": "write_file",
+        "count": 365
+      },
+      {
+        "last_action": "run_tests",
+        "result_bucket": "RESULT_OK",
+        "action": "run_tests",
+        "count": 357
+      },
+      {
+        "last_action": "list_directory",
+        "result_bucket": "RESULT_LISTED",
+        "action": "list_directory",
+        "count": 354
+      },
+      {
+        "last_action": "read_file",
+        "result_bucket": "RESULT_OK RESULT_READ",
+        "action": "respond_only",
+        "count": 349
+      },
+      {
+        "last_action": "apply_patch",
+        "result_bucket": "RESULT_EDITED RESULT_LISTED RESULT_OK",
+        "action": "grep_search",
+        "count": 348
+      },
+      {
+        "last_action": "run_tests",
+        "result_bucket": "RESULT_OK",
+        "action": "grep_search",
+        "count": 344
+      },
+      {
+        "last_action": "ask_user",
+        "result_bucket": "RESULT_OTHER",
+        "action": "read_file",
+        "count": 335
+      },
+      {
+        "last_action": "glob_pattern",
+        "result_bucket": "RESULT_LISTED",
+        "action": "list_directory",
+        "count": 333
+      },
+      {
+        "last_action": "read_file",
+        "result_bucket": "RESULT_OK RESULT_READ",
+        "action": "run_bash",
+        "count": 330
+      },
+      {
+        "last_action": "grep_search",
+        "result_bucket": "MATCH_COUNT_MID RESULT_LISTED RESULT_MATCHES",
+        "action": "grep_search",
+        "count": 322
+      },
+      {
+        "last_action": "read_file",
+        "result_bucket": "RESULT_OK RESULT_READ",
+        "action": "glob_pattern",
+        "count": 320
+      },
+      {
+        "last_action": "edit_file",
+        "result_bucket": "RESULT_EDITED RESULT_OK",
+        "action": "ask_user",
+        "count": 314
+      },
+      {
+        "last_action": "read_file",
+        "result_bucket": "RESULT_OK",
+        "action": "apply_patch",
+        "count": 312
+      },
+      {
+        "last_action": "ask_user",
+        "result_bucket": "RESULT_OTHER",
+        "action": "edit_file",
+        "count": 309
+      },
+      {
+        "last_action": "lint_or_typecheck",
+        "result_bucket": "RESULT_OK",
+        "action": "apply_patch",
+        "count": 291
+      },
+      {
+        "last_action": "grep_search",
+        "result_bucket": "MATCH_COUNT_HIGH RESULT_MATCHES",
+        "action": "edit_file",
+        "count": 290
+      },
+      {
+        "last_action": "ask_user",
+        "result_bucket": "RESULT_OTHER",
+        "action": "plan_task",
+        "count": 285
+      },
+      {
+        "last_action": "run_bash",
+        "result_bucket": "RESULT_OK",
+        "action": "list_directory",
+        "count": 267
+      },
+      {
+        "last_action": "grep_search",
+        "result_bucket": "MATCH_COUNT_HIGH RESULT_MATCHES",
+        "action": "grep_search",
+        "count": 264
+      },
+      {
+        "last_action": "ask_user",
+        "result_bucket": "RESULT_OTHER",
+        "action": "list_directory",
+        "count": 239
+      },
+      {
+        "last_action": "apply_patch",
+        "result_bucket": "RESULT_EDITED RESULT_LISTED RESULT_OK",
+        "action": "run_bash",
+        "count": 236
+      },
+      {
+        "last_action": "grep_search",
+        "result_bucket": "MATCH_COUNT_HIGH RESULT_MATCHES",
+        "action": "read_file",
+        "count": 236
+      },
+      {
+        "last_action": "grep_search",
+        "result_bucket": "MATCH_COUNT_MID RESULT_MATCHES",
+        "action": "glob_pattern",
+        "count": 234
+      }
+    ]
+  }
+}
