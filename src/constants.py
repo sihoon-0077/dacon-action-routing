@@ -15,8 +15,15 @@ ACTIONS = [
     "respond_only",
 ]
 
+ALL_CLASSES = ACTIONS
 ACTION_TO_ID = {action: i for i, action in enumerate(ACTIONS)}
+LABEL2ID = ACTION_TO_ID
 ID_TO_ACTION = {i: action for action, i in ACTION_TO_ID.items()}
+
+COARSE_NAMES = ["inspect", "modify", "execute", "communicate"]
+COARSE_OF = [0, 0, 0, 0, 1, 1, 1, 2, 2, 2, 3, 3, 3, 3]
+SEED = 42
+VAL_RATIO = 0.2
 
 ACTION_TO_GROUP4 = {
     "read_file": "inspect",

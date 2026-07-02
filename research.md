@@ -323,3 +323,26 @@ Best current validation decision:
 - Transformer alone: Macro-F1 `0.686816`.
 - Advanced router + transformer stronger-class override: Macro-F1 `0.719520`, accuracy `0.718559`, `1462` predictions changed.
 - Current practical next step: train/save a full-data transformer checkpoint and build a submit variant that uses advanced router as the base, then overrides only on the transformer-strong action set.
+
+## Policy Recovery v3
+- Finished fast validation phases: 2026-07-02
+- Plan: `C:\Users\kiros\Downloads\FINAL_SPEC_POLICY_RECOVERY_v3.md`
+- Report: `POLICY_RECOVERY_V3_RESULTS.md`
+
+Completed:
+- Q0 fixed `GroupShuffleSplit` files at `splits_v3/`: train `55894`, val `14106`, sessions `9429`.
+- Q1 phase 0 bug report: label order is correct; train loss decreases; old transformer weakness came from `[NOW]` prompt being truncated in the legacy tail serializer.
+- Q2 v3 ceiling: exact state tables are too sparse. Best expected Macro-F1 is only `0.110849` at `S1`, and S5 coverage is `0.004`.
+- Q3 serializer golden file: `tests/golden_serialize_v3.txt`.
+- Q6 decision: temperature `1.150098`, log-loss `0.734426 -> 0.728853`, ECE `0.032505 -> 0.013945`, argmax Macro-F1 `0.686816`, same-val biased Macro-F1 `0.689787`; strict valA/valB bias adoption fails (`-0.000747`, `-0.005442`).
+- Q7 ensemble: new local best `0.721702` from `advanced_router + calibrated/bias transformer stronger-class override`, accuracy `0.720119`, changes vs advanced `1445`.
+
+Current long run:
+- `reports/transformer/v3-run1-mdeberta-nowfirst-lr5e5-save`
+- Purpose: reproduce the full mDeBERTa run with `--save-model`, because the previous full run saved logits only.
+- Local GPU status at launch: RTX 4060 Ti 8GB, training uses about `7.0GB` VRAM.
+
+Interpretation:
+- Lookup leak and exact state-table recovery are dead ends for hidden generalization.
+- The useful shape is still a two-expert policy: fast advanced linear router as base, transformer representation as specialist.
+- The next real submit blocker is not validation score; it is creating a size-compliant transformer checkpoint and proving 30k-row inference fits under 10 minutes.

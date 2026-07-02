@@ -723,6 +723,145 @@ def predict_advanced_router(samples, artifact):
     return [str(pred) for pred in preds]
 
 
+def transformer_summarize_args(args, max_chars=260):
+    if not isinstance(args, dict) or not args:
+        return ""
+    useful_keys = [
+        "path",
+        "file",
+        "filename",
+        "target",
+        "pattern",
+        "query",
+        "glob",
+        "command",
+        "cmd",
+        "args",
+        "cwd",
+    ]
+    keep = []
+    for key in useful_keys:
+        if key in args and args[key] not in (None, "", []):
+            keep.append(f"{key}={safe_text(args[key], 120)}")
+    if not keep:
+        for key, value in list(args.items())[:4]:
+            keep.append(f"{key}={safe_text(value, 80)}")
+    return " ".join(keep)[:max_chars]
+
+
+def transformer_history_pairs(sample, max_pairs=6):
+    pairs = []
+    last_user = None
+    for turn in sample.get("history", []) or []:
+        role = turn.get("role")
+        if role == "user":
+            last_user = safe_text(turn.get("content"), 500)
+        elif role == "assistant_action":
+            action = safe_text(turn.get("name"), 80)
+            args = transformer_summarize_args(turn.get("args"), 240)
+            result = safe_text(turn.get("result_summary"), 500)
+            pairs.append((last_user or "", action, args, result))
+            last_user = None
+    return pairs[-max_pairs:]
+
+
+def serialize_transformer_now_first(sample, max_pairs=6):
+    meta = sample.get("session_meta", {}) or {}
+    ws = meta.get("workspace", {}) or {}
+    open_files = ws.get("open_files", []) or []
+    language_mix = ws.get("language_mix", {}) or {}
+    mix_items = sorted(language_mix.items(), key=lambda x: -float(x[1]))[:3]
+    budget = bucket_number(
+        meta.get("budget_tokens_remaining"),
+        [("lt5k", 5000), ("lt20k", 20000), ("lt80k", 80000), ("lt200k", 200000)],
+    )
+    loc = bucket_number(ws.get("loc"), [("lt5k", 5000), ("lt15k", 15000), ("lt40k", 40000), ("lt100k", 100000)])
+    turn = bucket_number(meta.get("turn_index"), [("early", 2), ("mid", 7), ("late", 12)])
+    elapsed = bucket_number(meta.get("elapsed_session_sec"), [("short", 60), ("mid", 300), ("long", 1200)])
+    chunks = [
+        "[NOW] " + safe_text(sample.get("current_prompt"), 900),
+        "[META] "
+        f"tier={safe_text(meta.get('user_tier'), 40)} "
+        f"lang={safe_text(meta.get('language_pref'), 40)} "
+        f"ci={safe_text(ws.get('last_ci_status'), 40)} "
+        f"dirty={ws.get('git_dirty', 'unknown')} "
+        f"turn={turn} budget={budget} elapsed={elapsed} loc={loc}",
+        "[OPEN] " + (" ".join(safe_text(path, 120).replace("\\", "/") for path in open_files[:8]) or "none"),
+        "[MIX] " + (" ".join(f"{safe_text(k, 20)}:{float(v):.2f}" for k, v in mix_items) or "none"),
+    ]
+    for idx, (user_text, action, args, result) in enumerate(reversed(transformer_history_pairs(sample, max_pairs=max_pairs)), 1):
+        chunks.append(f"[H{idx}] U: {user_text} >> A: {action} {args} => {result}")
+    return "\n".join(chunks)
+
+
+def apply_policy_v3_transformer_override(samples, preds, model_dir):
+    tf_dir = os.path.join(model_dir, "tf_main")
+    decision_path = os.path.join(model_dir, "decision.json")
+    if not (os.path.isdir(tf_dir) and os.path.exists(decision_path)):
+        return preds
+
+    import torch
+    from scipy.special import softmax
+    from transformers import AutoModelForSequenceClassification, AutoTokenizer
+
+    with open(decision_path, encoding="utf-8") as f:
+        decision = json.load(f)
+    temperature = float(decision.get("temperature", 1.0))
+    raw_bias = decision.get("bias_by_class") or {
+        action: value for action, value in zip(ALL_CLASSES, decision.get("bias", [0.0] * len(ALL_CLASSES)))
+    }
+    bias = np.array([float(raw_bias.get(action, 0.0)) for action in ALL_CLASSES], dtype=np.float32)
+    override_actions = set(
+        decision.get(
+            "override_actions",
+            [
+                "read_file",
+                "grep_search",
+                "list_directory",
+                "glob_pattern",
+                "edit_file",
+                "write_file",
+                "apply_patch",
+                "respond_only",
+            ],
+        )
+    )
+    threshold = float(decision.get("override_threshold", 0.0))
+    max_len = int(decision.get("max_len", 320))
+    history_pairs = int(decision.get("history_pairs", 6))
+    batch_size = int(decision.get("batch_size", 64))
+
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    dtype = torch.float16 if device.type == "cuda" else torch.float32
+    tokenizer = AutoTokenizer.from_pretrained(tf_dir, use_fast=False, local_files_only=True)
+    model = AutoModelForSequenceClassification.from_pretrained(tf_dir, local_files_only=True, torch_dtype=dtype)
+    model.to(device)
+    model.eval()
+
+    out = list(preds)
+    changed = 0
+    with torch.inference_mode():
+        for start in range(0, len(samples), batch_size):
+            batch_samples = samples[start : start + batch_size]
+            texts = [serialize_transformer_now_first(sample, max_pairs=history_pairs) for sample in batch_samples]
+            enc = tokenizer(texts, max_length=max_len, truncation=True, padding=True, return_tensors="pt")
+            enc = {key: value.to(device) for key, value in enc.items()}
+            logits = model(**enc).logits.detach().float().cpu().numpy()
+            probs = softmax(logits / max(temperature, 1e-6), axis=1)
+            scores = np.log(np.clip(probs, 1e-12, 1.0)) + bias[None, :]
+            pred_ids = scores.argmax(axis=1)
+            conf = probs.max(axis=1)
+            for offset, (pred_id, score_conf) in enumerate(zip(pred_ids, conf)):
+                action = ALL_CLASSES[int(pred_id)]
+                if action in override_actions and float(score_conf) >= threshold:
+                    i = start + offset
+                    if out[i] != action:
+                        changed += 1
+                    out[i] = action
+    print(f"policy_v3_transformer: changed={changed}/{len(samples)} threshold={threshold}")
+    return out
+
+
 def load_model_and_config(model_dir):
     advanced_router_path = os.path.join(model_dir, "advanced_router.pkl")
     routing_margin_path = os.path.join(model_dir, "routing_margin_router.pkl")
@@ -898,6 +1037,11 @@ def main():
     else:
         texts = [serialize_sample(sample, feature_mode) for sample in samples]
         preds = [str(pred) for pred in model.predict(texts)] if texts else []
+
+    try:
+        preds = apply_policy_v3_transformer_override(samples, preds, model_dir)
+    except Exception as exc:
+        print(f"warning: policy_v3 transformer override skipped: {exc}")
 
     try:
         preds = apply_session_lookup_override(samples, preds, str(Path(test_path).resolve().parent), model_dir)

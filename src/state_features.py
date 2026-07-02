@@ -8,6 +8,7 @@ FILE_RE = re.compile(
     re.I,
 )
 NUM_RE = re.compile(r"\b\d+(?:\.\d+)?\b")
+ID_STYLE_RE = re.compile(r"\b(?:[A-Za-z]+(?:_[A-Za-z0-9]+)+|[a-z]+[A-Z][A-Za-z0-9]*)\b")
 SPACE_RE = re.compile(r"\s+")
 
 
@@ -104,6 +105,17 @@ def normalize_prompt_template(text):
     return text
 
 
+def normalize_prompt_v3(text):
+    text = (text or "").strip()
+    text = re.sub(r"`[^`]+`", "<CODE>", text)
+    text = PATH_RE.sub("<F>", text)
+    text = FILE_RE.sub("<F>", text)
+    text = ID_STYLE_RE.sub("<ID>", text)
+    text = NUM_RE.sub("<N>", text)
+    text = text.lower()
+    return SPACE_RE.sub(" ", text)
+
+
 def budget_bucket(x):
     try:
         x = int(x)
@@ -116,6 +128,34 @@ def budget_bucket(x):
     if x < 120_000:
         return "BUDGET_MID"
     return "BUDGET_HIGH"
+
+
+def budget_bucket_v3(x):
+    try:
+        x = int(x)
+    except Exception:
+        return "b_unknown"
+    if x < 5_000:
+        return "b0"
+    if x < 20_000:
+        return "b1"
+    if x < 80_000:
+        return "b2"
+    return "b3"
+
+
+def loc_bucket_v3(x):
+    try:
+        x = int(x)
+    except Exception:
+        return "l_unknown"
+    if x < 5_000:
+        return "l0"
+    if x < 15_000:
+        return "l1"
+    if x < 40_000:
+        return "l2"
+    return "l3"
 
 
 def turn_bucket(turn):
@@ -139,6 +179,110 @@ def last_result_bucket(sample):
     if not pairs or not pairs[-1][1]:
         return "RESULT_NONE"
     return bucket_result_summary(pairs[-1][1].get("result_summary", ""))
+
+
+def result_bucket_v3(text):
+    t = (text or "").lower()
+    if not t:
+        return "none"
+    if any(x in t for x in ["error", "fail", "traceback", "exception", "conflict", "permission denied"]):
+        return "fail"
+    if any(x in t for x in ["no matches", "0 matches", "not found", "zero match"]):
+        return "zero_match"
+    if any(x in t for x in ["matches", "occurrences", "found", "results"]):
+        return "matches"
+    if ("read" in t and "line" in t) or "opened" in t:
+        return "read_ok"
+    return "ok"
+
+
+def last_result_bucket_v3(sample):
+    pairs = iter_history_pairs(sample)
+    if not pairs or not pairs[-1][1]:
+        return "none"
+    return result_bucket_v3(pairs[-1][1].get("result_summary", ""))
+
+
+def extract_file_mentions(text):
+    text = text or ""
+    mentions = set()
+    for match in PATH_RE.findall(text):
+        mentions.add(match.replace("\\", "/").lower())
+        mentions.add(match.replace("\\", "/").rsplit("/", 1)[-1].lower())
+    for match in FILE_RE.finditer(text):
+        mentions.add(match.group(0).lower())
+    return mentions
+
+
+def history_file_mentions(sample):
+    mentions = set()
+    for turn in sample.get("history", []) or []:
+        if turn.get("role") == "assistant_action":
+            args = turn.get("args")
+            if isinstance(args, dict):
+                for value in args.values():
+                    if isinstance(value, str):
+                        mentions.update(extract_file_mentions(value))
+                    elif isinstance(value, list):
+                        for item in value:
+                            if isinstance(item, str):
+                                mentions.update(extract_file_mentions(item))
+        elif turn.get("role") == "user":
+            mentions.update(extract_file_mentions(turn.get("content", "")))
+    return mentions
+
+
+def prompt_file_flags(sample):
+    prompt_mentions = extract_file_mentions(sample.get("current_prompt", ""))
+    meta = sample.get("session_meta", {}) or {}
+    ws = meta.get("workspace", {}) or {}
+    open_mentions = set()
+    for path in ws.get("open_files", []) or []:
+        norm = str(path).replace("\\", "/").lower()
+        open_mentions.add(norm)
+        open_mentions.add(norm.rsplit("/", 1)[-1])
+    seen_mentions = history_file_mentions(sample)
+    return {
+        "pf": int(bool(prompt_mentions)),
+        "pf_open": int(bool(prompt_mentions & open_mentions)),
+        "pf_seen": int(bool(prompt_mentions & seen_mentions)),
+    }
+
+
+def build_signature_v3(sample, level):
+    cur_tpl = normalize_prompt_v3(sample.get("current_prompt", ""))
+    last_actions = get_last_actions(sample, 2)
+    last1 = last_actions[-1] if len(last_actions) >= 1 else "NONE"
+    last2 = "|".join(last_actions[-2:]) if last_actions else "NONE"
+    result = last_result_bucket_v3(sample)
+    flags = prompt_file_flags(sample)
+    meta = sample.get("session_meta", {}) or {}
+    ws = meta.get("workspace", {}) or {}
+
+    if level == "S1":
+        parts = [cur_tpl]
+    elif level == "S2":
+        parts = [cur_tpl, f"last={last1}"]
+    elif level == "S3":
+        parts = [cur_tpl, f"last={last1}", f"result={result}"]
+    elif level == "S4":
+        parts = [cur_tpl, f"last={last1}", f"result={result}", f"last2={last2}"]
+    elif level == "S5":
+        parts = [
+            cur_tpl,
+            f"last={last1}",
+            f"result={result}",
+            f"last2={last2}",
+            f"pf_open={flags['pf_open']}",
+            f"pf_seen={flags['pf_seen']}",
+            f"ci={ws.get('last_ci_status', 'none')}",
+        ]
+    else:
+        raise ValueError(level)
+    return " || ".join(parts)
+
+
+SIGNATURE_LEVELS_V3 = ["S1", "S2", "S3", "S4", "S5"]
 
 
 def build_signature(sample, level):

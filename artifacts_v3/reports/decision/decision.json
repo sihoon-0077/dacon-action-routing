@@ -1,0 +1,83 @@
+{
+  "temperature": 1.1500975949696475,
+  "raw_log_loss": 0.7344256495531856,
+  "calibrated_log_loss": 0.7288529098342518,
+  "raw_ece": 0.032504996912590615,
+  "calibrated_ece": 0.013945173984643856,
+  "f1_argmax": 0.6868160098517185,
+  "acc_argmax": 0.7027506025804622,
+  "f1_biased": 0.6897865805656586,
+  "acc_biased": 0.7045228980575642,
+  "bias": [
+    0.0,
+    -0.09999999999999876,
+    0.4000000000000017,
+    -0.6499999999999992,
+    0.0,
+    1.4500000000000028,
+    0.35000000000000164,
+    0.5500000000000016,
+    0.0,
+    0.0,
+    -0.19999999999999885,
+    -0.04999999999999871,
+    0.0,
+    0.0
+  ],
+  "bias_by_class": {
+    "read_file": 0.0,
+    "grep_search": -0.09999999999999876,
+    "list_directory": 0.4000000000000017,
+    "glob_pattern": -0.6499999999999992,
+    "edit_file": 0.0,
+    "write_file": 1.4500000000000028,
+    "apply_patch": 0.35000000000000164,
+    "run_bash": 0.5500000000000016,
+    "run_tests": 0.0,
+    "lint_or_typecheck": 0.0,
+    "ask_user": -0.19999999999999885,
+    "plan_task": -0.04999999999999871,
+    "web_search": 0.0,
+    "respond_only": 0.0
+  },
+  "bias_history": [
+    {
+      "sweep": 0,
+      "macro_f1": 0.6868160098517185
+    },
+    {
+      "sweep": 1,
+      "macro_f1": 0.6897865805656586
+    },
+    {
+      "sweep": 2,
+      "macro_f1": 0.6897865805656586
+    },
+    {
+      "sweep": 3,
+      "macro_f1": 0.6897865805656586
+    }
+  ],
+  "crossval_gain_A2B": -0.0007468306774510713,
+  "crossval_gain_B2A": -0.005442308906545734,
+  "crossval_gain_avg": -0.0030945697919984028,
+  "adopt_bias_by_protocol": false,
+  "valA_size": 6963,
+  "valB_size": 7143,
+  "classes": [
+    "read_file",
+    "grep_search",
+    "list_directory",
+    "glob_pattern",
+    "edit_file",
+    "write_file",
+    "apply_patch",
+    "run_bash",
+    "run_tests",
+    "lint_or_typecheck",
+    "ask_user",
+    "plan_task",
+    "web_search",
+    "respond_only"
+  ]
+}

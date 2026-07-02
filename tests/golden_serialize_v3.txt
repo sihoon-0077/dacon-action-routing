@@ -1,0 +1,43 @@
+[META] tier=enterprise lang=en ci=passed dirty=True turn=8 budget=b3 loc=l2
+[OPEN] src/schemas/types.py pyproject.toml
+[MIX] py:0.82 yaml:0.10
+[FLAG] pf=0 pf_open=0 pf_seen=0
+[H1] U: schemas cmd should print the go runtime schemas too. show me the current impl, cheers
+[H1] A: read_file(path=pyproject.toml) -> ok; read pyproject.toml (173L)
+[H2] U: quick one — hmm fernet key is blank. list what's in plugins real quick
+[H2] A: grep_search(pattern=Config) -> 14 matches in 5 files
+[H3] U: drop in a REST_FRAMEWORK throttle config, scoped rate for anon vs user
+[H3] A: apply_patch(n_files=2) -> ok; patched 2 files (115+/10-)
+[H4] U: base image is fine, just cuda. rebuild if possible
+[H4] A: run_tests(target=all) -> PASS: 53 tests passed
+[H5] U: let me actually confirm the render count dropped, fire up the app and watch the perf monitor if you can
+[H5] A: run_tests(target=all) -> PASS: 66 tests passed
+[H6] U: when you're free, also HomeScreen probably needs the dependency array tightened on that effect. touch both in one go
+[H6] A: apply_patch(n_files=6) -> ok; patched 6 files (16+/3-)
+[NOW] bundle's fine. now run the profile tests to make sure i didn't break the happy path!
+
+--- SAMPLE ---
+
+[META] tier=pro lang=en ci=none dirty=True turn=1 budget=b3 loc=l1
+[OPEN] none
+[MIX] ts:0.55 tsx:0.30
+[FLAG] pf=0 pf_open=0 pf_seen=0
+[NOW] i added a couple cases to the spec earlier — open it so i can double check, cheers
+
+--- SAMPLE ---
+
+[META] tier=free lang=ko ci=failed dirty=True turn=6 budget=b1 loc=l2
+[OPEN] components/Button.tsx
+[MIX] ts:0.55 tsx:0.30
+[FLAG] pf=0 pf_open=0 pf_seen=0
+[H1] U: 도커 빌드가 pip install 단계에서 죽음. 의존성 파일 좀 열어봐 빨리
+[H1] A: list_directory(path=components) -> listed components: 12 items
+[H2] U: 잠시만, 새로 추가한 export 기능 components에 사용법 한 단락 적어두자. 지금 문서 어떻게 구성돼 있어?
+[H2] A: read_file(path=components/Button.tsx) -> ok; classes/functions: useAuth
+[H3] U: 별건 아닌데 components 모델 정의 자체에도 문제 없나 한번 짚어보자 가능하면
+[H3] A: read_file(path=components/Button.tsx) -> ok; 258 lines; defines: useAuth
+[H4] U: 음... 딥링크로 임의 경로 열리는 거 막아야 해. components/Button.tsx에서 linking 어떻게 받는지부터 가능하면
+[H4] A: grep_search(pattern=useAuth) -> found 17 occurrences of 'useAuth'
+[H5] U: 잠깐만 useAuth가 응답 .data.value 읽는데 백엔드는 다른 키로 줄걸. components/Button.tsx 응답 만드는 데 짚어봐
+[H5] A: grep_search(pattern=useAuth) -> found 13 occurrences of 'useAuth'
+[NOW] 역시 components에서 useAuth를 다시 부르고 있어. train fit / components transform 으로 분리해야 함. 단계 좀 쪼개줘 ㅎ
