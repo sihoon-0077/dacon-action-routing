@@ -1,7 +1,8 @@
 ﻿import json
 import re
 
-FILE_RE = re.compile(r"[\w./-]+\.[a-z]{1,4}\b", re.I)
+FILE_RE = re.compile(r"[\w@~./-]+\.[a-z][a-z0-9]{0,9}\b", re.I)
+EXT_RE = re.compile(r"\.([a-z][a-z0-9]{0,9})\b", re.I)
 
 
 def clean(value, max_chars=None):
@@ -40,6 +41,38 @@ def file_mentions(text):
     return {m.group(0).replace("\\", "/").lower() for m in FILE_RE.finditer(text or "")}
 
 
+def path_basename(path):
+    text = str(path or "").replace("\\", "/")
+    return text.rsplit("/", 1)[-1] if text else "none"
+
+
+def path_ext(path):
+    match = EXT_RE.search(str(path or ""))
+    return match.group(1).lower() if match else "none"
+
+
+def path_features(sample):
+    prompt = sample.get("current_prompt", "") or ""
+    prompt_paths = [m.group(0).replace("\\", "/") for m in FILE_RE.finditer(prompt)]
+    prompt_exts = sorted({path_ext(path) for path in prompt_paths if path_ext(path) != "none"})[:8]
+    meta = sample.get("session_meta", {}) or {}
+    ws = meta.get("workspace", {}) or {}
+    open_files = [str(path).replace("\\", "/") for path in (ws.get("open_files", []) or [])]
+    open_exts = sorted({path_ext(path) for path in open_files if path_ext(path) != "none"})[:8]
+    return {
+        "prompt_file": int(bool(prompt_paths)),
+        "prompt_glob": int("*." in prompt or "**/" in prompt or "glob" in prompt.lower()),
+        "prompt_slash": int("/" in prompt or "\\" in prompt),
+        "prompt_paths": prompt_paths[:5],
+        "prompt_basenames": [path_basename(path) for path in prompt_paths[:5]],
+        "prompt_exts": prompt_exts,
+        "open_files": open_files[:8],
+        "open_basenames": [path_basename(path) for path in open_files[:8]],
+        "open_exts": open_exts,
+        "open_count": len(open_files),
+    }
+
+
 def prompt_flags(sample):
     prompt_files = file_mentions(sample.get("current_prompt", ""))
     meta = sample.get("session_meta", {}) or {}
@@ -58,6 +91,21 @@ def prompt_flags(sample):
         "pf": int(bool(prompt_files)),
         "pf_open": int(any(f in open_files or f.rsplit("/", 1)[-1] in open_files for f in prompt_files)),
         "pf_seen": int(any(f in seen or f.rsplit("/", 1)[-1] in seen for f in prompt_files)),
+    }
+
+
+def prompt_surface_flags(sample):
+    text = sample.get("current_prompt", "") or ""
+    low = text.lower()
+    stripped = text.strip()
+    return {
+        "endq": int(stripped.endswith("?") or stripped.endswith("？")),
+        "exclaim": int(stripped.endswith("!")),
+        "ellipsis": int("..." in text or "…" in text),
+        "has_file_word": int(any(x in low for x in ["file", "path", "read", "open", "grep", "glob"])),
+        "has_run_word": int(any(x in low for x in ["run", "test", "lint", "typecheck", "execute", "bash"])),
+        "has_edit_word": int(any(x in low for x in ["edit", "patch", "write", "modify", "fix", "create"])),
+        "has_finish_word": int(any(x in low for x in ["summary", "summarize", "done", "finish", "final"])),
     }
 
 
@@ -98,6 +146,37 @@ def result_bucket_detail(text):
     if any(x in low for x in ["pass", "passed", "green", "exit=0", "exit 0", "ok", "success"]):
         return "ok"
     return "ok"
+
+
+def result_features(text):
+    raw = text or ""
+    low = raw.lower()
+    flags = []
+    if any(x in low for x in ["pass", "green", "exit=0", "exit 0", "lint clean", "ok"]):
+        flags.append("RESULT_PASS")
+    if any(x in low for x in ["fail", "error", "traceback", "exception", "exit=1", "exit 1"]):
+        flags.append("RESULT_FAIL_OR_ERROR")
+    if "permission denied" in low:
+        flags.append("RESULT_PERMISSION_DENIED")
+    if any(x in low for x in ["edit conflict", "context not unique", "target string not found"]):
+        flags.append("RESULT_EDIT_CONFLICT")
+    if "no matches" in low or re.search(r"\b0\s+matches\b", low):
+        flags.append("RESULT_ZERO_MATCH")
+    if "matches in" in low or "occurrences" in low or re.search(r"found\s+\d+", low):
+        flags.append("RESULT_TEXT_MATCHES")
+    if "files matched" in low:
+        flags.append("RESULT_FILES_MATCHED")
+    if "empty directory" in low:
+        flags.append("RESULT_EMPTY_DIRECTORY")
+    if any(x in low for x in ["listed", "entries", "items"]):
+        flags.append("RESULT_LIST_OK")
+    if any(x in low for x in ["read", "lines", "defines:", "classes/functions"]):
+        flags.append("RESULT_READ_OK")
+    if any(x in low for x in ["new file", "wrote"]):
+        flags.append("RESULT_WRITE_OK")
+    if any(x in low for x in ["patched", "applied", "modified"]):
+        flags.append("RESULT_EDIT_OK")
+    return flags or ["RESULT_NONE"]
 
 
 def workflow_state(sample):
@@ -251,13 +330,97 @@ def serialize_blocks_v2(sample, max_pairs=5):
     return fixed, history
 
 
+def serialize_blocks_xlmr_state_v1(sample, max_pairs=5):
+    meta = sample.get("session_meta", {}) or {}
+    ws = meta.get("workspace", {}) or {}
+    flags = prompt_flags(sample)
+    surface = prompt_surface_flags(sample)
+    paths = path_features(sample)
+    wf = workflow_state(sample)
+    lang_mix = ws.get("language_mix", {}) or {}
+    mix_items = sorted(lang_mix.items(), key=lambda item: -float(item[1]))[:4]
+    last = last_action_turn(sample)
+    if last:
+        last_action = clean(last.get("name"), 80)
+        last_args = summarize_args(last.get("args"))
+        last_bucket = result_bucket_detail(last.get("result_summary", ""))
+        last_flags = ",".join(result_features(last.get("result_summary", "")))
+        last_result = clean(last.get("result_summary"), 700)
+    else:
+        last_action = last_args = last_bucket = last_result = "none"
+        last_flags = "RESULT_NONE"
+
+    fixed = [
+        "[NOW] " + clean(sample.get("current_prompt"), 1200),
+        "[LAST] "
+        f"action={last_action} "
+        f"args={last_args} "
+        f"bucket={last_bucket} "
+        f"flags={last_flags} "
+        f"result={last_result}",
+        "[STATE] "
+        f"verify={wf['test']} "
+        f"edits_after_verify={wf['edits_after_test']} "
+        f"inspects_since_modify={wf['insp_since_mod']} "
+        f"last_modify={last_action if last_action in {'edit_file', 'write_file', 'apply_patch'} else 'none'}",
+        "[SEQ] actions=" + action_sequence(sample, 8),
+        "[FILES] "
+        f"prompt_file={paths['prompt_file']} "
+        f"prompt_glob={paths['prompt_glob']} "
+        f"prompt_slash={paths['prompt_slash']} "
+        f"prompt_ext={','.join(paths['prompt_exts']) or 'none'} "
+        f"mentioned={','.join(clean(p, 80) for p in paths['prompt_basenames']) or 'none'} "
+        f"open_count={paths['open_count']} "
+        f"open_ext={','.join(paths['open_exts']) or 'none'} "
+        f"open={','.join(clean(p, 80) for p in paths['open_basenames']) or 'none'}",
+        "[FLAG] "
+        f"pf={flags['pf']} pf_open={flags['pf_open']} pf_seen={flags['pf_seen']} "
+        + " ".join(f"{key}={value}" for key, value in surface.items()),
+        "[META] "
+        f"tier={clean(meta.get('user_tier'), 40)} "
+        f"lang={clean(meta.get('language_pref'), 40)} "
+        f"ci={clean(ws.get('last_ci_status'), 40)} "
+        f"dirty={ws.get('git_dirty', 'none')} "
+        f"turn={clean(meta.get('turn_index'), 40)} "
+        f"budget={budget_bucket(meta.get('budget_tokens_remaining'))} "
+        f"loc={loc_bucket(ws.get('loc'))}",
+        "[MIX] " + (" ".join(f"{clean(k, 30)}:{float(v):.2f}" for k, v in mix_items) or "none"),
+    ]
+
+    pairs = history_pairs(sample, max_pairs=max_pairs)
+    history = []
+    n = len(pairs)
+    for idx, (user_text, action) in enumerate(pairs):
+        label = f"H{n - idx}"
+        name = clean(action.get("name"), 80)
+        args = summarize_args(action.get("args"))
+        bucket_name = result_bucket_detail(action.get("result_summary", ""))
+        result_flag = ",".join(result_features(action.get("result_summary", "")))
+        result = clean(action.get("result_summary"), 500)
+        history.append(
+            f"[{label}] user={user_text}\n"
+            f"[{label}] action={name} args={args} bucket={bucket_name} flags={result_flag} result={result}"
+        )
+    return fixed, history
+
+
 def serialize(sample: dict, variant="v1") -> str:
-    fixed, history = serialize_blocks_v2(sample) if variant == "v2" else serialize_blocks(sample)
+    if variant == "xlmr_state_v1":
+        fixed, history = serialize_blocks_xlmr_state_v1(sample)
+    elif variant == "v2":
+        fixed, history = serialize_blocks_v2(sample)
+    else:
+        fixed, history = serialize_blocks(sample)
     return "\n".join(fixed + history)
 
 
 def serialize_for_tokenizer(sample, tokenizer, max_len, variant="v1"):
-    fixed, history = serialize_blocks_v2(sample) if variant == "v2" else serialize_blocks(sample)
+    if variant == "xlmr_state_v1":
+        fixed, history = serialize_blocks_xlmr_state_v1(sample)
+    elif variant == "v2":
+        fixed, history = serialize_blocks_v2(sample)
+    else:
+        fixed, history = serialize_blocks(sample)
     while True:
         text = "\n".join(fixed + history)
         ids = tokenizer(text, add_special_tokens=True, truncation=False)["input_ids"]
