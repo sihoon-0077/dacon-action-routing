@@ -172,6 +172,8 @@ def save_checkpoint(model, tokenizer, model_dir, cfg, fold, epoch, metrics):
     for key, value in model.state_dict().items():
         state[key] = value.detach().half().cpu() if value.is_floating_point() else value.detach().cpu()
     torch.save(state, model_dir / "model.pt")
+    if hasattr(model, "encoder") and hasattr(model.encoder, "config"):
+        model.encoder.config.save_pretrained(model_dir)
     tokenizer.save_pretrained(model_dir)
     if not (model_dir / "tokenizer.json").exists():
         raise FileNotFoundError(f"tokenizer.json missing after save_pretrained: {model_dir}")
