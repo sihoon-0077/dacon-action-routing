@@ -12,7 +12,7 @@ import numpy as np
 import torch
 import torch.nn as nn
 import yaml
-from sklearn.metrics import f1_score, log_loss, precision_recall_fscore_support
+from sklearn.metrics import confusion_matrix, f1_score, log_loss, precision_recall_fscore_support
 from torch.utils.data import DataLoader, Dataset
 from transformers import AutoModel, AutoTokenizer, get_cosine_schedule_with_warmup
 
@@ -148,6 +148,7 @@ def evaluate(model, loader, device):
     return {
         "fine_logits": fine,
         "coarse_logits": coarse,
+        "probs": probs,
         "y": y,
         "pred": pred,
         "nll": float(log_loss(y, probs, labels=list(range(len(ALL_CLASSES))))),
@@ -164,6 +165,30 @@ def save_class_report(path, y, pred):
         writer.writeheader()
         for i, cls in enumerate(ALL_CLASSES):
             writer.writerow({"class": cls, "precision": p[i], "recall": r[i], "f1": f[i], "support": int(s[i])})
+
+
+def save_confusion_matrix(path, y, pred):
+    matrix = confusion_matrix(y, pred, labels=list(range(len(ALL_CLASSES))))
+    with open(path, "w", encoding="utf-8", newline="") as fobj:
+        writer = csv.writer(fobj)
+        writer.writerow(["true\\pred"] + ALL_CLASSES)
+        for i, cls in enumerate(ALL_CLASSES):
+            writer.writerow([cls] + [int(x) for x in matrix[i]])
+
+
+def save_validation_preds(path, samples, y, pred, probs):
+    with open(path, "w", encoding="utf-8", newline="") as fobj:
+        fieldnames = ["id", "true", "pred", "correct", "confidence"]
+        writer = csv.DictWriter(fobj, fieldnames=fieldnames)
+        writer.writeheader()
+        for sample, yi, pi, row_probs in zip(samples, y, pred, probs):
+            writer.writerow({
+                "id": sample["id"],
+                "true": ID2LABEL[int(yi)],
+                "pred": ID2LABEL[int(pi)],
+                "correct": int(int(yi) == int(pi)),
+                "confidence": float(row_probs[int(pi)]),
+            })
 
 
 def save_checkpoint(model, tokenizer, model_dir, cfg, fold, epoch, metrics):
@@ -322,9 +347,12 @@ def main():
             best = row.copy()
             np.save(oof_dir / f"fold_{args.fold}_logits.npy", metrics["fine_logits"])
             np.save(oof_dir / f"fold_{args.fold}_coarse.npy", metrics["coarse_logits"])
+            np.save(oof_dir / f"fold_{args.fold}_probs.npy", metrics["probs"])
             np.save(oof_dir / f"fold_{args.fold}_y.npy", metrics["y"])
             (oof_dir / f"fold_{args.fold}_ids.txt").write_text("\n".join(s["id"] for s in val_samples) + "\n", encoding="utf-8")
             save_class_report(report_dir / f"fold_{args.fold}_class_report.csv", metrics["y"], metrics["pred"])
+            save_confusion_matrix(report_dir / f"fold_{args.fold}_confusion_matrix.csv", metrics["y"], metrics["pred"])
+            save_validation_preds(report_dir / f"fold_{args.fold}_validation_preds.csv", val_samples, metrics["y"], metrics["pred"], metrics["probs"])
             save_checkpoint(model, tokenizer, model_dir, cfg, args.fold, epoch, row)
 
     report = {

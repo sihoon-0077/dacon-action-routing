@@ -47,7 +47,7 @@ def audit_lengths(samples, tokenizer, serializer, max_len):
 
 
 def write_markdown(path, payload):
-    lines = ["# XLM-R Token Audit", ""]
+    lines = ["# Transformer Token Audit", ""]
     lines.append(f"- model: `{payload['model_name']}`")
     lines.append(f"- serializer: `{payload['serializer']}`")
     lines.append(f"- samples: `{payload['n']}`")
