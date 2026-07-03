@@ -16,25 +16,19 @@ from pipeline_v4.serialize import serialize_for_tokenizer
 MARKERS = ["[NOW]", "[LAST]", "[STATE]", "[SEQ]", "[FILES]", "[FLAG]", "[META]"]
 
 
-def marker_kept(tokenizer, text, marker, max_len):
-    pos = text.find(marker)
-    if pos < 0:
-        return False
-    prefix = text[: pos + len(marker)]
-    return len(tokenizer(prefix, add_special_tokens=True, truncation=False)["input_ids"]) <= max_len
-
-
 def audit_lengths(samples, tokenizer, serializer, max_len):
     lengths = []
     history_counts = []
     marker_counts = {marker: 0 for marker in MARKERS}
-    for sample in samples:
+    for idx, sample in enumerate(samples, 1):
         text = serialize_for_tokenizer(sample, tokenizer, max_len, serializer)
         ids = tokenizer(text, add_special_tokens=True, truncation=False)["input_ids"]
         lengths.append(len(ids))
         history_counts.append(sum(1 for marker in ["[H1]", "[H2]", "[H3]", "[H4]", "[H5]"] if marker in text))
         for marker in MARKERS:
-            marker_counts[marker] += int(marker_kept(tokenizer, text, marker, max_len))
+            marker_counts[marker] += int(marker in text)
+        if idx % 10_000 == 0:
+            print(json.dumps({"event": "audit_progress", "max_len": max_len, "rows": idx}, ensure_ascii=False), flush=True)
     arr = np.asarray(lengths, dtype=np.int64)
     return {
         "max_len": int(max_len),
