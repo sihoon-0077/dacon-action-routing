@@ -421,7 +421,7 @@ Core rule:
 |---|---|---|---|---|---|---|
 | H1 | `[NOW]` prompt truncation caused early transformer weakness. | Token audit on 10k/full train. | mDeBERTa fold/full rerun with now-first serializer. | `[NOW]` kept 100%; fold/full improves by at least `+0.005`. | Pass. Missing `[NOW]` dropped from `4393/10000` to `0/10000`; full mDeBERTa reached `0.686816`; hybrid reached `0.719520`. | Adopt. |
 | H2 | Workflow-state flags help action routing. | Tier B linear proxy and half split. | Add to transformer serializer. | Overall `+0.002` and execute target class lift. | Pass. I1 proxy delta `+0.003935`, execute delta `+0.011375`. | Adopt as serializer feature. |
-| H3 | XLM-R tokenizer/backbone is better for mixed Korean/English agent state. | Token audit and fold0 3epoch. | fold1 confirm, then full train only if gates pass. | fold0 `>=0.720`; strong if `>=0.730`; fold0/fold1 average `>=0.725` for full train. | Pending. Token audit passed for 512 and 384; fold0 running. | Run. |
+| H3 | XLM-R tokenizer/backbone is better for mixed Korean/English agent state. | Token audit and fold0 3epoch. | fold1 confirm, then full train only if gates pass. | fold0 `>=0.720`; strong if `>=0.730`; fold0/fold1 average `>=0.725` for full train. | Fail. Token audit passed, but fold0 best Macro-F1 was only `0.697038`. | Reject as main track. |
 | H4 | Numeric result buckets improve inspect classes. | Tier B linear proxy. | Transformer bundle only if proxy passes. | Macro-F1 `+0.002` and inspect `+0.004`. | Fail. I4 delta `-0.001317`. | Reject. |
 | H5 | Prompt surface flags help ask/plan/respond routing. | Tier B linear proxy. | Transformer serializer ablation only if proxy passes. | Macro-F1 `+0.002` and communicate lift. | Fail. I5 delta `-0.001257`. | Reject for now. |
 | H6 | Last-action transition priors still add lift on top of advanced/transformer. | Corrected decision-stage validation. | OOF stacking only if proxy passes. | Transformer-score gain `>=+0.002`. | Fail. I6 gain only `+0.000442`. | Reject. |
@@ -506,11 +506,13 @@ Pre-declared gates:
 Current status:
 - Token audit passed for `max_len=512`: over limit `0%`; `[NOW]`, `[LAST]`, `[STATE]` kept `100%`.
 - `max_len=384` also has over limit `0%`, but keeps fewer history pairs on average than 512.
-- fold0 3epoch training is running.
-- Latest observed fold0 log: epoch 1 step `11216/14026`, loss `2.9153 -> 1.4787`.
+- fold0 3epoch training finished.
+- Best fold0 result: epoch `3`, Macro-F1 `0.697038`, NLL `0.704592`, accuracy `0.715499`.
+- Training loss curve: `1.3637 -> 0.7925 -> 0.6923`.
+- Validation Macro-F1 curve: `0.655583 -> 0.684692 -> 0.697038`.
 
-Decision pending:
-- Wait for fold0 validation Macro-F1.
-- If fold0 `<0.710`, stop XLM-R and return to mDeBERTa/distillation.
-- If fold0 `0.710-0.720`, run one cheap tuning only (`lr` or `max_len=384`), then decide.
-- If fold0 `>=0.720`, runner proceeds to fold1.
+Decision:
+- XLM-R state v1 failed the pre-declared fold0 gate.
+- Fold1 and full-data XLM-R training are skipped.
+- Keep the token-audit/serializer code as reusable infrastructure, but do not spend more GPU on XLM-R unless a new Tier A/B hypothesis explains why the fold0 result should improve materially.
+- Next better use of GPU: mDeBERTa specialist improvement, distillation from transformer logits into a fast student, or inspect-class targeted experiments.
