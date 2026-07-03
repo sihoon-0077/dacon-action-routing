@@ -292,3 +292,38 @@ transformer가 로컬 validation에서는 도움이 되지만:
 - fold gate를 못 넘기면 full train 금지.
 - offline smoke 없는 zip은 제출 금지.
 - TLE가 난 transformer는 teacher/specialist로만 쓴다.
+
+## 11. mDeBERTa 384 Full-Data Submit Result
+
+The full-data run for the `mDeBERTa v2 max_len=384` track finished successfully.
+
+Run settings:
+- run name: `mdeberta384_v2_384_full_5e`
+- backbone: `microsoft/mdeberta-v3-base`
+- train size: `70,000`
+- serializer: `v2`
+- max length: `384`
+- epochs: `5`
+- saved checkpoints: `full_epoch_3`, `full_epoch_5`
+
+Training curve:
+
+| Epoch | Train Loss | Elapsed Sec |
+|---:|---:|---:|
+| 1 | `1.399504` | `2347.1` |
+| 2 | `0.919554` | `4686.9` |
+| 3 | `0.852309` | `7029.8` |
+| 4 | `0.806051` | `9372.2` |
+| 5 | `0.778535` | `11714.1` |
+
+Submit artifacts:
+
+| Package | Checkpoint | Candidate Limit | Smoke Result | Size |
+|---|---|---:|---|---:|
+| `submit_v4_full384_ep3_cand8000.zip` | `full_epoch_3` | `8000` | pass, `selected=5/5 changed=1`, rows `5` | `521.38 MB` |
+| `submit_v4_full384_ep5_cand8000.zip` | `full_epoch_5` | `8000` | pass, `selected=5/5 changed=1`, rows `5` | `521.37 MB` |
+
+Decision:
+- Both zips are under the `1GB` limit and pass local offline smoke.
+- Submit `ep5` first as the main candidate.
+- Use `ep3` as the safer early-stop candidate if public LB indicates over-training.

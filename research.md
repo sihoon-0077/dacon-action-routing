@@ -538,3 +538,37 @@ Decision:
 - Strong full-train gate passed.
 - Start full-data `mDeBERTa v2 max_len=384` training.
 - Save epoch 3 and epoch 5 checkpoints and build `cand8000` submit probes for both.
+
+### mDeBERTa 384 Full-Data Submit Candidates
+
+Run:
+- `mdeberta384_v2_384_full_5e`
+- backbone: `microsoft/mdeberta-v3-base`
+- serializer: `v2`
+- `max_len=384`
+- train size: `70,000`
+- epochs: `5`
+- effective batch: `batch_size=2`, `grad_accum=16`
+- saved checkpoints: epoch `3`, epoch `5`
+
+Training result:
+
+| Epoch | Train Loss | Elapsed Sec |
+|---:|---:|---:|
+| 1 | `1.399504` | `2347.1` |
+| 2 | `0.919554` | `4686.9` |
+| 3 | `0.852309` | `7029.8` |
+| 4 | `0.806051` | `9372.2` |
+| 5 | `0.778535` | `11714.1` |
+
+Submit packages:
+
+| Package | Checkpoint | Candidate Limit | Smoke | Size |
+|---|---|---:|---|---:|
+| `submit_v4_full384_ep3_cand8000.zip` | `full_epoch_3` | `8000` | pass: `selected=5/5 changed=1`, rows `5` | `521.38 MB` |
+| `submit_v4_full384_ep5_cand8000.zip` | `full_epoch_5` | `8000` | pass: `selected=5/5 changed=1`, rows `5` | `521.37 MB` |
+
+Decision:
+- Both full-data packages are structurally submit-ready: zip size is under `1GB`, local smoke passes, and no runtime errors were observed locally.
+- Submit `ep5` first as the main full-data candidate because it uses the lowest training loss.
+- Keep `ep3` as the regularization/early-stop alternative if `ep5` underperforms on public LB.
