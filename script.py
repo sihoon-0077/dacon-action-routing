@@ -1013,6 +1013,44 @@ def v4_action_sequence(sample, n=6):
     return " > ".join(names[-n:]) if names else "none"
 
 
+def v4_prefilter_priority(sample, base_pred):
+    search_actions = {"read_file", "grep_search", "list_directory", "glob_pattern"}
+    run_actions = {"run_bash", "run_tests", "lint_or_typecheck"}
+    modify_actions = {"edit_file", "write_file", "apply_patch"}
+    score = 0.0
+    if base_pred in search_actions:
+        score += 100.0
+    elif base_pred in run_actions:
+        score += 45.0
+    elif base_pred in {"ask_user", "plan_task", "web_search"}:
+        score += 35.0
+    elif base_pred in modify_actions:
+        score += 25.0
+
+    flags = v4_prompt_flags(sample)
+    score += 8.0 * flags["pf"]
+    score += 5.0 * flags["pf_seen"]
+    score += 3.0 * flags["pf_open"]
+
+    actions = [turn.get("name") for turn in sample.get("history", []) or [] if turn.get("role") == "assistant_action"]
+    score += min(len(actions), 8) * 1.5
+    if actions:
+        last = actions[-1]
+        if last in search_actions:
+            score += 10.0
+        if last in modify_actions:
+            score += 6.0
+        if last in run_actions:
+            score += 4.0
+
+    prompt = (sample.get("current_prompt") or "").lower()
+    if any(token in prompt for token in ["file", "파일", "열어", "읽", "grep", "search", "찾", "where", "어디"]):
+        score += 8.0
+    if any(token in prompt for token in ["test", "테스트", "lint", "type", "돌려", "실행"]):
+        score += 5.0
+    return score
+
+
 def serialize_transformer_v4_blocks(sample, max_pairs=5):
     meta = sample.get("session_meta", {}) or {}
     ws = meta.get("workspace", {}) or {}
@@ -1112,6 +1150,19 @@ def apply_policy_v4_transformer_override(samples, preds, model_dir):
     max_len = int(decision.get("max_len", 512))
     batch_size = int(decision.get("batch_size", 32))
     use_direct = bool(decision.get("direct", False))
+    max_transformer_samples = int(decision.get("max_transformer_samples", 0) or 0)
+    prefilter_actions = set(decision.get("prefilter_actions") or [])
+
+    target_indices = list(range(len(samples)))
+    if prefilter_actions:
+        target_indices = [i for i in target_indices if preds[i] in prefilter_actions]
+    if max_transformer_samples > 0 and len(target_indices) > max_transformer_samples:
+        ranked = sorted(
+            target_indices,
+            key=lambda i: (v4_prefilter_priority(samples[i], preds[i]), -i),
+            reverse=True,
+        )
+        target_indices = sorted(ranked[:max_transformer_samples])
 
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     tokenizer = AutoTokenizer.from_pretrained(v4_dir, use_fast=True, local_files_only=True)
@@ -1129,8 +1180,9 @@ def apply_policy_v4_transformer_override(samples, preds, model_dir):
     out = list(preds)
     changed = 0
     with torch.inference_mode():
-        for start in range(0, len(samples), batch_size):
-            batch_samples = samples[start : start + batch_size]
+        for start in range(0, len(target_indices), batch_size):
+            batch_indices = target_indices[start : start + batch_size]
+            batch_samples = [samples[i] for i in batch_indices]
             texts = [serialize_transformer_v4_for_tokenizer(sample, tokenizer, max_len) for sample in batch_samples]
             enc = tokenizer(texts, max_length=max_len, truncation=True, padding=True, return_tensors="pt")
             enc = {key: value.to(device) for key, value in enc.items()}
@@ -1142,12 +1194,16 @@ def apply_policy_v4_transformer_override(samples, preds, model_dir):
             conf = probs.max(axis=1)
             for offset, (pred_id, score_conf) in enumerate(zip(pred_ids, conf)):
                 action = ALL_CLASSES[int(pred_id)]
-                i = start + offset
+                i = batch_indices[offset]
                 if use_direct or (action in override_actions and float(score_conf) >= threshold):
                     if out[i] != action:
                         changed += 1
                     out[i] = action
-    print(f"policy_v4_transformer: changed={changed}/{len(samples)} threshold={threshold} direct={use_direct}")
+    print(
+        "policy_v4_transformer: "
+        f"selected={len(target_indices)}/{len(samples)} changed={changed} "
+        f"threshold={threshold} direct={use_direct} max_samples={max_transformer_samples}"
+    )
     return out
 
 

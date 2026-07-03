@@ -97,9 +97,11 @@ def main():
         "--zip-path",
         str(ZIP_PATH),
         "--max-len",
-        "512",
+        "256",
         "--batch-size",
-        "32",
+        "64",
+        "--max-transformer-samples",
+        "8000",
         "--threshold",
         "0.0",
     ]

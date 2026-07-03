@@ -96,6 +96,8 @@ def main():
     parser.add_argument("--threshold", type=float, default=0.0)
     parser.add_argument("--batch-size", type=int, default=32)
     parser.add_argument("--max-len", type=int, default=512)
+    parser.add_argument("--max-transformer-samples", type=int, default=0)
+    parser.add_argument("--prefilter-actions", default="")
     parser.add_argument("--direct", action="store_true")
     args = parser.parse_args()
 
@@ -126,6 +128,8 @@ def main():
         "override_threshold": float(args.threshold),
         "max_len": int(args.max_len),
         "batch_size": int(args.batch_size),
+        "max_transformer_samples": int(args.max_transformer_samples),
+        "prefilter_actions": [x.strip() for x in args.prefilter_actions.split(",") if x.strip()],
         "direct": bool(args.direct),
         "disable_session_lookup": True,
     }
