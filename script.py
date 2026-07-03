@@ -1092,9 +1092,9 @@ def apply_policy_v4_transformer_override(samples, preds, model_dir):
             self.head_fine = nn.Linear(hidden, 14)
             self.head_coarse = nn.Linear(hidden, 4)
 
-        def forward(self, input_ids, attention_mask):
+        def forward(self, input_ids, attention_mask, **kwargs):
             out = self.encoder(input_ids=input_ids, attention_mask=attention_mask).last_hidden_state
-            mask = attention_mask.unsqueeze(-1).float()
+            mask = attention_mask.unsqueeze(-1).to(dtype=out.dtype)
             pooled = (out * mask).sum(1) / mask.sum(1).clamp_min(1e-6)
             pooled = self.dropout(pooled)
             return self.head_fine(pooled), self.head_coarse(pooled)
@@ -1121,6 +1121,8 @@ def apply_policy_v4_transformer_override(samples, preds, model_dir):
     model.load_state_dict(state, strict=True)
     if device.type == "cuda":
         model.half()
+    else:
+        model.float()
     model.to(device)
     model.eval()
 

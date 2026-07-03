@@ -49,6 +49,23 @@ def copytree_clean(src, dst):
     shutil.copytree(src, dst, ignore=ignore)
 
 
+def ensure_encoder_config(model_dir):
+    model_dir = Path(model_dir)
+    if (model_dir / "config.json").exists():
+        return
+    model_config_path = model_dir / "model_config.json"
+    if not model_config_path.exists():
+        raise FileNotFoundError(f"missing config.json and model_config.json in {model_dir}")
+    model_config = json.loads(model_config_path.read_text(encoding="utf-8"))
+    backbone = model_config.get("backbone") or model_config.get("config", {}).get("backbone")
+    if not backbone:
+        raise ValueError(f"could not infer backbone from {model_config_path}")
+    from transformers import AutoConfig
+
+    cfg = AutoConfig.from_pretrained(backbone, local_files_only=True)
+    cfg.save_pretrained(model_dir)
+
+
 def zip_dir(src_dir, zip_path):
     src_dir = Path(src_dir)
     zip_path = Path(zip_path)
@@ -91,6 +108,7 @@ def main():
     (out_dir / "requirements.txt").write_text("", encoding="utf-8")
     shutil.copy2(args.advanced_router, out_dir / "model" / "advanced_router.pkl")
     copytree_clean(args.v4_main, out_dir / "model" / "v4_main")
+    ensure_encoder_config(out_dir / "model" / "v4_main")
 
     learned = load_optional_decision(args.fold_decision)
     use_bias = bool(learned.get("adopted", False))
