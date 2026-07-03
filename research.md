@@ -517,3 +517,24 @@ Decision:
 - Fold1 and full-data XLM-R training are skipped.
 - Keep the token-audit/serializer code as reusable infrastructure, but do not spend more GPU on XLM-R unless a new Tier A/B hypothesis explains why the fold0 result should improve materially.
 - Next better use of GPU: mDeBERTa specialist improvement, distillation from transformer logits into a fast student, or inspect-class targeted experiments.
+
+### Current mDeBERTa 384 v2 Gate Experiment
+
+Hypothesis:
+- `max_len=384` can preserve most useful v2 state while reducing submit-time TLE risk compared with `512`.
+
+Pre-declared gates:
+- Token audit: `[NOW]`, `[LAST]`, `[STATE]` must be kept at `100%`; `[SEQ] >=95%`.
+- Strong full-train gate: fold0 Macro-F1 `>=0.716`.
+- Recommended full-train gate: fold0 Macro-F1 `>=0.712`.
+- Stop gate: fold0 Macro-F1 `<0.705`.
+
+Result:
+- Token audit passed: p50 `330`, p90 `374`, p95 `379`, p99 `383`, over-rate `0.0000`, average history pairs kept `1.99`.
+- Fold0 best: epoch `5`, Macro-F1 `0.717801`, NLL `0.681687`, accuracy `0.733055`.
+- Epoch curve: `0.588438 -> 0.683268 -> 0.709016 -> 0.717279 -> 0.717801`.
+
+Decision:
+- Strong full-train gate passed.
+- Start full-data `mDeBERTa v2 max_len=384` training.
+- Save epoch 3 and epoch 5 checkpoints and build `cand8000` submit probes for both.

@@ -29,6 +29,19 @@ from pipeline_v4.train_fold import (
 )
 
 
+def parse_save_epochs(value):
+    if value is None:
+        return set()
+    if isinstance(value, int):
+        return {int(value)}
+    if isinstance(value, (list, tuple, set)):
+        return {int(x) for x in value}
+    text = str(value).strip()
+    if not text:
+        return set()
+    return {int(x.strip()) for x in text.split(",") if x.strip()}
+
+
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--config", default="pipeline_v4/configs/mdeberta_a_local8gb.yaml")
@@ -40,6 +53,7 @@ def main():
     cfg = apply_overrides(load_config(args.config), args.override)
     set_seed(int(cfg.get("seed", SEED)))
     run = str(cfg["run_name"])
+    save_epochs = parse_save_epochs(cfg.get("save_epochs"))
     artifact = Path(args.artifact_dir)
     report_dir = artifact / "reports" / run
     model_dir = artifact / "models" / run / "full"
@@ -120,6 +134,10 @@ def main():
         history.append(row)
         print("epoch_done " + json.dumps(row, ensure_ascii=False), flush=True)
         save_checkpoint(model, tokenizer, model_dir, cfg, "full", epoch, row)
+        if epoch in save_epochs:
+            epoch_dir = artifact / "models" / run / f"full_epoch_{epoch}"
+            save_checkpoint(model, tokenizer, epoch_dir, cfg, f"full_epoch_{epoch}", epoch, row)
+            print(f"saved_epoch_checkpoint {epoch_dir}", flush=True)
 
     payload = {
         "run": run,

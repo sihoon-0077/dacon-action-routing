@@ -28,6 +28,7 @@ advanced_router 같은 빠른 선형 router를 base로 사용
 | transformer hybrid local | `0.7217` | advanced + calibrated transformer override | 로컬 최고권 |
 | mDeBERTa v2 fold0 | `0.7176` | `v2bundle_512_5e/fold_0` | transformer specialist 후보 |
 | mDeBERTa v2 fold1 | `0.7165` | `v2bundle_512_5e/fold_1` | fold 안정성 확인 |
+| mDeBERTa 384 fold0 | `0.7178` | `mdeberta384_v2_384_5e/fold_0` | strong full-train gate 통과 |
 | XLM-R fold0 | `0.6970` | `xlmr_state_v1_512` | gate fail, reject |
 | public/hidden 확인 최고 | `0.7099979659` | `submit_policy_v3_spm.zip` | 현재 제출 최고 |
 
@@ -255,14 +256,16 @@ transformer가 로컬 validation에서는 도움이 되지만:
 
 ### N3. mDeBERTa specialist 개선
 
-가설:
-- XLM-R은 실패했지만 mDeBERTa v2 serializer는 fold0/1 `0.716~0.718`로 유효하다.
+현재 상태:
+- `max_len=384` fold0이 Macro-F1 `0.7178`로 strong full-train gate를 통과했다.
+- 따라서 full 70k 384 학습을 진행하고, ep3/ep5 `cand8000` 제출 후보를 만든다.
 
 검증:
-- max_len 384 vs 512, epoch 4/5, workflow-only ablation.
+- full 70k `max_len=384`, epoch3/epoch5 checkpoint submit.
 
 통과 기준:
-- fold0 `>=0.725` 또는 fold0/fold1 평균 `>=0.722`.
+- public `>=0.70999`이면 v3_spm 대비 유효.
+- public `>=0.715`이면 384 full track을 메인 후보로 승격.
 
 ### N4. 제출 runtime profiling
 
@@ -289,4 +292,3 @@ transformer가 로컬 validation에서는 도움이 되지만:
 - fold gate를 못 넘기면 full train 금지.
 - offline smoke 없는 zip은 제출 금지.
 - TLE가 난 transformer는 teacher/specialist로만 쓴다.
-
