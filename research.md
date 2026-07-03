@@ -467,6 +467,7 @@ Tier discipline:
 | `submit_policy_v3_spm.zip` | compatibility package | `0.7099979659` | `6m10s` | unknown | Add tokenizer/SPM compatibility. | Real lift, but still far from 0.78. |
 | `submit_v4_fold0_debug.zip` | fold0 transformer debug | TLE | `>10m` | transformer all rows | Full hidden test transformer inference at 512. | Runtime failure; not viable direct. |
 | `submit_v4_fold0_fast.zip` | fold0 gated debug | pending/diagnostic | under local smoke | `selected=5/5 changed=1` on sample | Verify v4 override activation under time budget. | Debug only, not final performance candidate. |
+| `submit_v4_fold0_384_12k.zip` | fold0 transformer gated debug | pending | local smoke passed | `selected=5/5 changed=1` on sample | Test a less-aggressive TLE-safe gate: max_len 384, batch 64, top 12k candidates. | Submit probe. |
 
 Submission interpretation:
 - A server score equal to `0.704342388` usually means the transformer path did not run or made no effective hidden changes.
