@@ -582,3 +582,76 @@ Decision:
 - `ep5` is better than `ep3` on public LB, so there is no immediate over-training signal.
 - Increasing candidate coverage from the original smaller submit setting to `20000` improves public score while staying well under the 10 minute runtime limit.
 - Next probe: `ep5`, `max_len=384`, candidate limit `25000`; this should test whether coverage continues to help without pushing too close to TLE.
+
+## N2/N3/N4 Cheap-Proxy Forensic Result
+
+### Setup
+
+- validation: `fold0` from `pipeline_v4/folds/fold_assignments.csv`
+- no new transformer training
+- base reference: current full-data `advanced_router.pkl` predictions on fold0
+- important caveat: this base is marked as `advanced_full` because it was trained on all train rows, so fold0 base metrics are leakage-inflated and should not be read as OOF performance
+- transformer reference for N4: `mdeberta384_v2_384_5e` fold0 probabilities
+- output dirs:
+  - `reports/n2_inspect_specialist/`
+  - `reports/n3_comm_triad/`
+  - `reports/n4_candidate_gating/`
+
+### N2 Inspect Specialist
+
+| Metric | Value |
+|---|---:|
+| train inspect rows | `23013` |
+| val inspect rows | `5769` |
+| isolated inspect Macro-F1 | `0.460472` |
+| advanced_full isolated inspect Macro-F1 reference | `0.704293` |
+| best deployable tau | `0.30` |
+| best deployable Macro-F1 | `0.778377` |
+| delta vs advanced_full | `-0.039022` |
+| changed_count | `708` |
+
+Decision:
+- Reject for submit.
+- The cheap inspect specialist is not strong enough. Its isolated inspect F1 is far below the current advanced/full reference, and deployable override damages the leakage-inflated base across every tested threshold.
+- Next N2 work should not be another plain TF-IDF specialist. If revisited, it needs either OOF-trained base comparison plus stronger path/state features, or transformer/distillation signal.
+
+### N3 Communication Triad
+
+| Metric | Value |
+|---|---:|
+| train triad rows | `5331` |
+| train comm4 rows | `9459` |
+| triad isolated Macro-F1 | `0.574079` |
+| comm4 isolated Macro-F1 | `0.667295` |
+| best deployable tau | `0.30` |
+| best deployable Macro-F1 | `0.759256` |
+| delta vs advanced_full | `-0.058143` |
+| changed_count | `733` |
+| respond_only F1 at best | `0.987736` |
+
+Decision:
+- Reject for submit.
+- The respond-only protection works reasonably, but the triad/comm specialist still causes too much overall damage. It does not meet the `+0.002` deployable gain gate.
+- Keep the false override examples for analysis, but do not package this track.
+
+### N4 Candidate Gating
+
+| Metric | Value |
+|---|---:|
+| advanced_full Macro-F1 reference | `0.817399` |
+| transformer direct Macro-F1 | `0.717801` |
+| hybrid all override-actions Macro-F1 | `0.783724` |
+| best rank-curve K on leakage base | `1000` |
+| best rank-curve Macro-F1 | `0.813833` |
+| delta vs advanced_full | `-0.003566` |
+| estimated runtime at best K | `0.30 min` |
+
+Key forensic finding:
+- Under the leakage-inflated `advanced_full` base, transformer overrides look harmful because the base has already seen fold0.
+- Public LB tells the more relevant deployment story: `v4ep5_384_20k.zip` improved to `0.712729632` in `6m05s`, so hidden-test candidate coverage is still a real bottleneck.
+- Therefore N4 remains the active submit track, but local fold0 forensic should be treated as a sanity diagnostic rather than the model-selection authority.
+
+Decision:
+- Continue candidate-limit/runtime probing before spending GPU on another model.
+- Preferred next submit probe remains `v4ep5_384_25k.zip`.
+- If 25k improves and stays under 8.5 minutes, test one final wider candidate limit; if it degrades or approaches TLE, freeze the 20k/25k setting and move to distillation.
