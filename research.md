@@ -567,8 +567,18 @@ Submit packages:
 |---|---|---:|---|---:|
 | `submit_v4_full384_ep3_cand8000.zip` | `full_epoch_3` | `8000` | pass: `selected=5/5 changed=1`, rows `5` | `521.38 MB` |
 | `submit_v4_full384_ep5_cand8000.zip` | `full_epoch_5` | `8000` | pass: `selected=5/5 changed=1`, rows `5` | `521.37 MB` |
+| `v4ep3_384_20k.zip` | `full_epoch_3` | `20000` | pass: `selected=5/5 changed=1`, rows `5` | `521.38 MB` |
+| `v4ep5_384_20k.zip` | `full_epoch_5` | `20000` | pass: `selected=5/5 changed=1`, rows `5` | `521.37 MB` |
+
+Public LB results:
+
+| Package | Public Score | Server Runtime | Decision |
+|---|---:|---:|---|
+| `v4ep3_384_20k.zip` | `0.7101909354` | `6m08s` | weaker than ep5; keep as early-stop fallback |
+| `v4ep5_384_20k.zip` | `0.712729632` | `6m05s` | best current public score; candidate coverage is a real bottleneck |
 
 Decision:
 - Both full-data packages are structurally submit-ready: zip size is under `1GB`, local smoke passes, and no runtime errors were observed locally.
-- Submit `ep5` first as the main full-data candidate because it uses the lowest training loss.
-- Keep `ep3` as the regularization/early-stop alternative if `ep5` underperforms on public LB.
+- `ep5` is better than `ep3` on public LB, so there is no immediate over-training signal.
+- Increasing candidate coverage from the original smaller submit setting to `20000` improves public score while staying well under the 10 minute runtime limit.
+- Next probe: `ep5`, `max_len=384`, candidate limit `25000`; this should test whether coverage continues to help without pushing too close to TLE.
