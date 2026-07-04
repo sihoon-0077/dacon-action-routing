@@ -798,3 +798,54 @@ Decision:
 - No complete 5-fold transformer OOF exists yet.
 - Cycle3 mainline should prioritize OOF fold completion over SupCon.
 - Action: start `mdeberta384_v2_384_5e` fold1~4 sequential training, then run calibration, OOF assembly, and bias optimization.
+
+### Cycle3 5-Fold OOF Completion
+
+Completed at `2026-07-05 03:17:29`.
+
+| Fold | Best Epoch | Macro-F1 | NLL | Accuracy |
+|---:|---:|---:|---:|---:|
+| 0 | 5 | `0.717801` | `0.681687` | `0.733055` |
+| 1 | 5 | `0.716547` | `0.691097` | `0.731212` |
+| 2 | 4 | `0.715503` | `0.694432` | `0.725362` |
+| 3 | 5 | `0.726254` | `0.674959` | `0.739677` |
+| 4 | 5 | `0.714051` | `0.703792` | `0.722451` |
+| mean | - | `0.718031` | - | - |
+| std | - | `0.004292` | - | - |
+
+OOF aggregate:
+
+| Metric | Value |
+|---|---:|
+| rows | `70000` |
+| OOF Macro-F1 argmax | `0.718193` |
+| OOF NLL | `0.689227` |
+| OOF accuracy | `0.730329` |
+
+Temperature calibration:
+
+| Fold | Temperature | NLL Before | NLL After |
+|---:|---:|---:|---:|
+| 0 | `1.001471` | `0.681687` | `0.681686` |
+| 1 | `1.009795` | `0.691097` | `0.691050` |
+| 2 | `0.999680` | `0.694432` | `0.694432` |
+| 3 | `0.996947` | `0.674959` | `0.674955` |
+| 4 | `0.997271` | `0.703792` | `0.703788` |
+
+Bias optimization:
+
+| Metric | Value |
+|---|---:|
+| F1 before | `0.718193` |
+| F1 after | `0.721981` |
+| crossval A->B | `0.001890` |
+| crossval B->A | `0.002210` |
+| adopted | `False` |
+
+Decision:
+- 5-fold OOF is now available and stable enough for model-selection decisions.
+- The transformer OOF mean is around `0.718`, which is consistent with the best full-data public submissions around `0.710~0.713`.
+- Fold variance is small except fold3 being favorable, so fold3 should not be treated as a standalone signal.
+- Temperature scaling is basically neutral; keep it for calibrated probability artifacts, but do not expect leaderboard movement.
+- Bias optimization improves same-OOF F1 to `0.721981`, but the half-split cross-validation gain is only about `+0.002`; current optimizer correctly rejected adoption. Treat bias as a cautious optional experiment, not a default submit feature.
+- Next high-value path: use the complete OOF to train/validate a lightweight meta-router or candidate selector against the full-data ep5 transformer, instead of guessing thresholds from public LB.
