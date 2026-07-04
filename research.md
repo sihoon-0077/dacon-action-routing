@@ -727,3 +727,74 @@ Decision:
 - SupCon/LCL remains a plausible GPU experiment because the key confusion pairs include many high-margin errors, especially communication and execute pairs.
 - However, the strongest cheap evidence is diagnostic rather than a guaranteed public-LB gain.
 - Recommended GPU path if budget is available: run A0 first to isolate class-balanced sampler effects, then only continue A1/A2/A3 if A0 is not worse than the current 3epoch baseline by more than `0.003`.
+
+## Cycle3 OOF / R-Check / SupCon Gate Result
+
+### Setup
+
+- source plan: `EXPERIMENT_CYCLE3_OOF_RCHECK_SUPCON.md`
+- run: `mdeberta384_v2_384_5e`
+- available transformer OOF at start: fold0 only
+- CPU diagnostics completed:
+  - R-check confidence calibration by confusion pair
+  - read/list pair-bias grid
+  - OOF artifact status check
+- reports: `reports/cycle3_oof_rcheck_supcon/`
+
+### Temperature Calibration
+
+| Metric | Value |
+|---|---:|
+| fold0 temperature | `1.001471` |
+| NLL before | `0.681687` |
+| NLL after | `0.681686` |
+
+Temperature is effectively `1.0`, so the fold0 transformer is already close to calibrated in aggregate.
+
+### R-Check Summary
+
+| Pair | N | Weighted Gap | Valid Bins | High Gap Bins | Top1 Acc | Mean Margin |
+|---|---:|---:|---:|---:|---:|---:|
+| `ask_user<->plan_task` | `853` | `0.089077` | `5` | `1` | `0.658851` | `0.571230` |
+| `run_tests<->lint_or_typecheck` | `489` | `0.037870` | `4` | `0` | `0.615542` | `0.437429` |
+| `run_bash<->run_tests` | `1332` | `0.055682` | `5` | `0` | `0.754505` | `0.697785` |
+| `read_file<->grep_search` | `2757` | `0.057345` | `5` | `0` | `0.598839` | `0.440134` |
+| `read_file<->list_directory` | `1238` | `0.018004` | `3` | `0` | `0.462036` | `0.196530` |
+
+Decision:
+- SupCon/LCL gate is not strongly opened by R-check. No target high-margin pair reached weighted gap `>=0.15`.
+- This weakens the case for immediately spending an overnight run on A1/A2/A3.
+- If SupCon is revisited, run A0 first and continue only if sampler-only damage is within the pre-declared gate.
+
+### Pair-Bias Read/List
+
+Best grid result:
+
+| Metric | Value |
+|---|---:|
+| best `d_to_read_file` | `0.0` |
+| best margin threshold | `0.05` |
+| delta_all | `0.000000` |
+| delta_A | `0.000000` |
+| delta_B | `0.000000` |
+| changed_all | `0` |
+
+Decision:
+- Reject pair-bias for submit.
+- Even the best half-split-safe point is no-op; nonzero tweaks are unstable or too small.
+
+### OOF Status
+
+| Run | Folds Present | Rows | Complete 5-Fold |
+|---|---|---:|---|
+| `diag_maxlen_512_1e` | `0` | `13898` | `False` |
+| `diag_v2bundle_512_3e` | `0` | `13898` | `False` |
+| `mdeberta384_v2_384_5e` | `0` | `13898` | `False` |
+| `mdeberta_a` | `0` | `13898` | `False` |
+| `v2bundle_512_5e` | `0,1` | `27976` | `False` |
+| `xlmr_state_v1_512` | `0` | `13898` | `False` |
+
+Decision:
+- No complete 5-fold transformer OOF exists yet.
+- Cycle3 mainline should prioritize OOF fold completion over SupCon.
+- Action: start `mdeberta384_v2_384_5e` fold1~4 sequential training, then run calibration, OOF assembly, and bias optimization.
