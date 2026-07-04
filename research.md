@@ -655,3 +655,75 @@ Decision:
 - Continue candidate-limit/runtime probing before spending GPU on another model.
 - Preferred next submit probe remains `v4ep5_384_25k.zip`.
 - If 25k improves and stays under 8.5 minutes, test one final wider candidate limit; if it degrades or approaches TLE, freeze the 20k/25k setting and move to distillation.
+
+## SupCon/LCL + INTENT v2.1 Cheap Probe Result
+
+### Setup
+
+- source plan: `EXPERIMENT_SUPCON_INTENT (1).md`
+- run type: S1/S2/S3 cheap validation only
+- no new transformer training
+- base model for diagnostics: `mdeberta384_v2_384_5e` fold0 logits/probs
+- INTENT Tier-B model: `compact_flags_text` LogReg baseline vs `compact_flags_text + [INTENT]` LogReg
+- reports: `reports/supcon_intent_probe/`
+
+### S1 Metrics
+
+| Metric | Value |
+|---|---:|
+| inspect pair error mean | `0.140393` |
+| communicate pair error mean | `0.190631` |
+| inspect4 Macro-F1 | `0.581960` |
+| communicate4 Macro-F1 | `0.685132` |
+| execute3 Macro-F1 | `0.698268` |
+| modify3 Macro-F1 | `0.962013` |
+
+Pair error highlights:
+
+| Pair | Pair Error Rate | Error Mean Margin | Low Margin `<0.1` | High Margin `>0.3` |
+|---|---:|---:|---:|---:|
+| `read_file<->grep_search` | `0.209332` | `0.273700` | `0.333744` | `0.296798` |
+| `read_file<->list_directory` | `0.205269` | `0.146146` | `0.440285` | `0.076649` |
+| `ask_user<->plan_task` | `0.229323` | `0.467365` | `0.090164` | `0.700820` |
+| `run_tests<->lint_or_typecheck` | `0.164248` | `0.470043` | `0.093023` | `0.744186` |
+| `run_bash<->run_tests` | `0.154976` | `0.582753` | `0.056140` | `0.807018` |
+
+Interpretation:
+- Inspect confusion is still a real bottleneck.
+- `read_file<->list_directory` has a high low-margin share, so decision-boundary correction may help there.
+- `ask_user<->plan_task`, `run_tests<->lint_or_typecheck`, and `run_bash<->run_tests` are mostly high-margin errors, which points more toward representation/loss issues than simple pair-bias.
+
+### M2 Centroid Proxy
+
+Saved pooled embeddings were not available, so S1 used fold0 logits as a cheap centroid proxy.
+
+| Group | Average Logit-Centroid Cosine Distance |
+|---|---:|
+| inspect4 | `0.031538` |
+| communicate4 | `0.576690` |
+| execute3 | `0.037018` |
+| modify3 | `0.878548` |
+
+Important caveat:
+- communicate4 average is inflated by `respond_only` being far from the triad. Inside the triad, `ask_user`, `plan_task`, and `web_search` are still close: roughly `0.013~0.022`.
+- True M2 requires pooled encoder embeddings from a separate forward pass.
+
+### S3 INTENT Tier-B
+
+| Model | Overall Macro-F1 | Communicate4 Macro-F1 | Web F1 | Ask F1 | Plan F1 | Respond F1 |
+|---|---:|---:|---:|---:|---:|---:|
+| base compact LogReg | `0.658805` | `0.650895` | `0.521295` | `0.548094` | `0.538000` | `0.996190` |
+| INTENT v2.1 LogReg | `0.658710` | `0.649840` | `0.522034` | `0.545951` | `0.535183` | `0.996190` |
+| delta | `-0.000095` | `-0.001055` | `+0.000739` | `-0.002144` | `-0.002817` | `0.000000` |
+
+Decision:
+- INTENT v2.1 does not pass the Tier-B `communicate4 +0.004` gate.
+- Do not spend a standalone GPU run on INTENT tags.
+- If INTENT is reused later, include it only as a low-cost serializer side feature bundled with a stronger adopted experiment.
+
+### SupCon/LCL Decision
+
+Decision:
+- SupCon/LCL remains a plausible GPU experiment because the key confusion pairs include many high-margin errors, especially communication and execute pairs.
+- However, the strongest cheap evidence is diagnostic rather than a guaranteed public-LB gain.
+- Recommended GPU path if budget is available: run A0 first to isolate class-balanced sampler effects, then only continue A1/A2/A3 if A0 is not worse than the current 3epoch baseline by more than `0.003`.
