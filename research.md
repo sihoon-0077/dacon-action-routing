@@ -849,3 +849,64 @@ Decision:
 - Temperature scaling is basically neutral; keep it for calibrated probability artifacts, but do not expect leaderboard movement.
 - Bias optimization improves same-OOF F1 to `0.721981`, but the half-split cross-validation gain is only about `+0.002`; current optimizer correctly rejected adoption. Treat bias as a cautious optional experiment, not a default submit feature.
 - Next high-value path: use the complete OOF to train/validate a lightweight meta-router or candidate selector against the full-data ep5 transformer, instead of guessing thresholds from public LB.
+
+## CPU Tier-A Battery 15 / Serializer v2.2
+
+### Setup
+
+- source note: `CPU_TIERA_BATTERY_15EXPERIMENTS.md`
+- reproduction script: `scripts/run_cpu_tiera_battery.py`
+- output: `artifacts/cpu_tiera_battery_15/summary.md`
+- data: full `train.jsonl` 70,000 rows
+- method: conditional label distribution only, no model training
+
+### Result
+
+The reproduction confirms the main low-cost signals from the supplied ledger:
+
+| Front | Adopted / Noted Signals |
+|---|---|
+| inspect | last list/glob count bucket, inspect streak, open file count |
+| communicate | prompt length bucket only as a low-cost side feature; turn/chain/CI signals remain observable through existing meta/history |
+| execute | split test vs lint state, edits after each verifier, last modified extension, execute self-repeat as observable prior |
+
+Important nuance:
+- `C-4` and `E-5` show mechanical distribution movement in the reproduction, but final decisions stay reject/replaced because they are not clean new routing cards.
+- `E-5` is covered better by `E-2` (`last_mod_ext`), so it should not be separately promoted.
+
+### Code Change
+
+Added a non-breaking serializer variant:
+
+```text
+serializer: v2_2
+config: pipeline_v4/configs/mdeberta_v2_2_384.yaml
+golden: pipeline_v4/tests/golden_serialize_v2_2.txt
+```
+
+New `v2_2` state tokens:
+
+```text
+test={never|pass|fail}
+lint={never|pass|fail}
+edits_after_test={0|1|2+}
+edits_after_lint={0|1|2+}
+insp_streak={0|1|2|3|4+}
+last_mod_ext={py|ts|tsx|js|other|none}
+open_cnt={0|1|2+}
+last_listglob={list_directory|glob_pattern}:{0|1-3|4-15|16+|unknown}
+len_bucket={s|m|l}
+```
+
+Validation:
+
+```text
+python scripts/run_cpu_tiera_battery.py --data-dir data --out-dir artifacts/cpu_tiera_battery_15
+python pipeline_v4/tests/test_serialize.py
+python pipeline_v4/tests/test_serialize.py --variant v2_2 --golden pipeline_v4/tests/golden_serialize_v2_2.txt
+```
+
+Decision:
+- Adopt `v2_2` as the next serializer candidate.
+- Do not overwrite current `v2` runs or submissions.
+- Next GPU check should be a cheap fold0 gate: `mdeberta_v2_2_384.yaml`, 3 epochs first, pass only if it beats the comparable `v2` fold0 checkpoint by at least `+0.003` Macro-F1 or improves execute F1 enough to justify full retrain.

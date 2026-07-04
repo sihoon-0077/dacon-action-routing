@@ -4,6 +4,10 @@ import re
 FILE_RE = re.compile(r"[\w@~./-]+\.[a-z][a-z0-9]{0,9}\b", re.I)
 EXT_RE = re.compile(r"\.([a-z][a-z0-9]{0,9})\b", re.I)
 
+INSPECT_ACTIONS = {"read_file", "grep_search", "list_directory", "glob_pattern"}
+MODIFY_ACTIONS = {"edit_file", "write_file", "apply_patch"}
+EXECUTE_ACTIONS = {"run_bash", "run_tests", "lint_or_typecheck"}
+
 
 def clean(value, max_chars=None):
     if value is None:
@@ -148,6 +152,34 @@ def result_bucket_detail(text):
     return "ok"
 
 
+def count_bucket_from_result(text):
+    low = (text or "").lower()
+    if not low:
+        return "none"
+    if "no matches" in low or "not found" in low:
+        return "0"
+    patterns = [
+        r"\b(\d+)\s+(?:items|entries|files|directories)\b",
+        r"\bfound\s+(\d+)\s+(?:files|matches|occurrences|results)\b",
+        r"\b(\d+)\s+(?:matches|occurrences|results)\b",
+        r"\bmatched\s+(\d+)\s+files\b",
+    ]
+    counts = []
+    for pattern in patterns:
+        for match in re.finditer(pattern, low):
+            counts.append(int(match.group(1)))
+    if not counts:
+        return "unknown"
+    n = max(counts)
+    if n == 0:
+        return "0"
+    if n <= 3:
+        return "1-3"
+    if n <= 15:
+        return "4-15"
+    return "16+"
+
+
 def result_features(text):
     raw = text or ""
     low = raw.lower()
@@ -214,6 +246,112 @@ def workflow_state(sample):
         "edits_after_test": "2+" if edits_after_test >= 2 else str(edits_after_test),
         "insp_since_mod": "3+" if insp_since_mod >= 3 else str(insp_since_mod),
     }
+
+
+def workflow_state_v22(sample):
+    actions = []
+    last_test_idx = None
+    last_lint_idx = None
+    test_state = "never"
+    lint_state = "never"
+    for turn in sample.get("history", []) or []:
+        if turn.get("role") != "assistant_action":
+            continue
+        idx = len(actions)
+        name = turn.get("name") or "none"
+        actions.append(turn)
+        if name == "run_tests":
+            test_state = "fail" if result_bucket_detail(turn.get("result_summary", "")) == "fail" else "pass"
+            last_test_idx = idx
+        elif name == "lint_or_typecheck":
+            lint_state = "fail" if result_bucket_detail(turn.get("result_summary", "")) == "fail" else "pass"
+            last_lint_idx = idx
+
+    def edits_after(idx):
+        if idx is None:
+            return "0"
+        n = sum(1 for turn in actions[idx + 1 :] if turn.get("name") in MODIFY_ACTIONS)
+        return "2+" if n >= 2 else str(n)
+
+    return {
+        "test": test_state,
+        "lint": lint_state,
+        "edits_after_test": edits_after(last_test_idx),
+        "edits_after_lint": edits_after(last_lint_idx),
+    }
+
+
+def inspect_streak_bucket(sample):
+    n = 0
+    for turn in reversed(sample.get("history", []) or []):
+        if turn.get("role") != "assistant_action":
+            continue
+        if turn.get("name") in INSPECT_ACTIONS:
+            n += 1
+            continue
+        break
+    return "4+" if n >= 4 else str(n)
+
+
+def open_count_bucket(sample):
+    meta = sample.get("session_meta", {}) or {}
+    ws = meta.get("workspace", {}) or {}
+    n = len(ws.get("open_files", []) or [])
+    return "2+" if n >= 2 else str(n)
+
+
+def prompt_len_bucket(sample):
+    n = len((sample.get("current_prompt") or "").strip())
+    if n < 40:
+        return "s"
+    if n < 100:
+        return "m"
+    return "l"
+
+
+def normalize_mod_ext(ext):
+    ext = (ext or "none").lower()
+    if ext in {"py", "ts", "tsx", "js"}:
+        return ext
+    if ext == "none":
+        return "none"
+    return "other"
+
+
+def last_modified_ext(sample):
+    for turn in reversed(sample.get("history", []) or []):
+        if turn.get("role") != "assistant_action" or turn.get("name") not in MODIFY_ACTIONS:
+            continue
+        args = turn.get("args")
+        values = []
+        if isinstance(args, dict):
+            for key in ["path", "file", "filename", "target"]:
+                value = args.get(key)
+                if isinstance(value, str):
+                    values.append(value)
+                elif isinstance(value, list):
+                    values.extend(str(item) for item in value if isinstance(item, str))
+            if not values:
+                values.append(clean(args))
+        for value in values:
+            match = FILE_RE.search(value or "")
+            if match:
+                return normalize_mod_ext(path_ext(match.group(0)))
+            ext = path_ext(value)
+            if ext != "none":
+                return normalize_mod_ext(ext)
+    return "none"
+
+
+def last_list_glob_count_bucket(sample):
+    for turn in reversed(sample.get("history", []) or []):
+        if turn.get("role") != "assistant_action":
+            continue
+        name = turn.get("name") or "none"
+        if name in {"list_directory", "glob_pattern"}:
+            return f"{name}:{count_bucket_from_result(turn.get('result_summary', ''))}"
+        return "none"
+    return "none"
 
 
 def surface_flag_endq(sample):
@@ -330,6 +468,79 @@ def serialize_blocks_v2(sample, max_pairs=5):
     return fixed, history
 
 
+def serialize_blocks_v2_2(sample, max_pairs=5):
+    meta = sample.get("session_meta", {}) or {}
+    ws = meta.get("workspace", {}) or {}
+    flags = prompt_flags(sample)
+    surface = prompt_surface_flags(sample)
+    wf = workflow_state_v22(sample)
+    last = last_action_turn(sample)
+    if last:
+        last_action = clean(last.get("name"), 80)
+        last_args = summarize_args(last.get("args"))
+        last_bucket = result_bucket_detail(last.get("result_summary", ""))
+        last_count_bucket = (
+            count_bucket_from_result(last.get("result_summary", ""))
+            if last.get("name") in {"list_directory", "glob_pattern"}
+            else "none"
+        )
+        last_result = clean(last.get("result_summary"), 700)
+    else:
+        last_action = last_args = last_bucket = last_count_bucket = last_result = "none"
+
+    fixed = [
+        "[NOW] " + clean(sample.get("current_prompt"), 1200),
+        "[LAST] "
+        f"action={last_action} "
+        f"args={last_args} "
+        f"result_bucket={last_bucket} "
+        f"count_bucket={last_count_bucket} "
+        f"result={last_result}",
+        "[STATE] "
+        f"test={wf['test']} "
+        f"lint={wf['lint']} "
+        f"edits_after_test={wf['edits_after_test']} "
+        f"edits_after_lint={wf['edits_after_lint']} "
+        f"insp_streak={inspect_streak_bucket(sample)} "
+        f"last_mod_ext={last_modified_ext(sample)} "
+        f"open_cnt={open_count_bucket(sample)} "
+        f"last_listglob={last_list_glob_count_bucket(sample)}",
+        "[SEQ] actions=" + action_sequence(sample, 8),
+        "[FLAG] "
+        f"pf={flags['pf']} pf_open={flags['pf_open']} pf_seen={flags['pf_seen']} "
+        + " ".join(f"{key}={value}" for key, value in surface.items()),
+        "[META] "
+        f"tier={clean(meta.get('user_tier'), 40)} "
+        f"lang={clean(meta.get('language_pref'), 40)} "
+        f"ci={clean(ws.get('last_ci_status'), 40)} "
+        f"dirty={ws.get('git_dirty', 'none')} "
+        f"turn={clean(meta.get('turn_index'), 40)} "
+        f"budget={budget_bucket(meta.get('budget_tokens_remaining'))} "
+        f"loc={loc_bucket(ws.get('loc'))} "
+        f"len_bucket={prompt_len_bucket(sample)}",
+        "[OPEN] " + (" ".join(clean(p, 180).replace("\\", "/") for p in (ws.get("open_files", []) or [])) or "none"),
+    ]
+    pairs = history_pairs(sample, max_pairs=max_pairs)
+    history = []
+    n = len(pairs)
+    for idx, (user_text, action) in enumerate(pairs):
+        label = f"H{n - idx}"
+        name = clean(action.get("name"), 80)
+        args = summarize_args(action.get("args"))
+        bucket_name = result_bucket_detail(action.get("result_summary", ""))
+        count_bucket = (
+            count_bucket_from_result(action.get("result_summary", ""))
+            if action.get("name") in {"list_directory", "glob_pattern"}
+            else "none"
+        )
+        result = clean(action.get("result_summary"), 500)
+        history.append(
+            f"[{label}] user={user_text}\n"
+            f"[{label}] action={name} args={args} bucket={bucket_name} count={count_bucket} result={result}"
+        )
+    return fixed, history
+
+
 def serialize_blocks_xlmr_state_v1(sample, max_pairs=5):
     meta = sample.get("session_meta", {}) or {}
     ws = meta.get("workspace", {}) or {}
@@ -407,6 +618,8 @@ def serialize_blocks_xlmr_state_v1(sample, max_pairs=5):
 def serialize(sample: dict, variant="v1") -> str:
     if variant == "xlmr_state_v1":
         fixed, history = serialize_blocks_xlmr_state_v1(sample)
+    elif variant in {"v2_2", "v2.2"}:
+        fixed, history = serialize_blocks_v2_2(sample)
     elif variant == "v2":
         fixed, history = serialize_blocks_v2(sample)
     else:
@@ -417,6 +630,8 @@ def serialize(sample: dict, variant="v1") -> str:
 def serialize_for_tokenizer(sample, tokenizer, max_len, variant="v1"):
     if variant == "xlmr_state_v1":
         fixed, history = serialize_blocks_xlmr_state_v1(sample)
+    elif variant in {"v2_2", "v2.2"}:
+        fixed, history = serialize_blocks_v2_2(sample)
     elif variant == "v2":
         fixed, history = serialize_blocks_v2(sample)
     else:

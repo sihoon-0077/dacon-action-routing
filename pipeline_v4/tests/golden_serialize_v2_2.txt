@@ -1,0 +1,47 @@
+[NOW] bundle's fine. now run the profile tests to make sure i didn't break the happy path!
+[LAST] action=apply_patch args=none result_bucket=ok count_bucket=none result=ok; patched 6 files (16+/3-)
+[STATE] test=pass lint=never edits_after_test=1 edits_after_lint=0 insp_streak=0 last_mod_ext=none open_cnt=2+ last_listglob=none
+[SEQ] actions=read_file > grep_search > apply_patch > run_tests > run_tests > apply_patch
+[FLAG] pf=0 pf_open=0 pf_seen=0 endq=0 exclaim=1 ellipsis=0 has_file_word=1 has_run_word=1 has_edit_word=0 has_finish_word=0
+[META] tier=enterprise lang=en ci=passed dirty=True turn=8 budget=b3 loc=l2 len_bucket=m
+[OPEN] src/schemas/types.py pyproject.toml
+[H5] user=quick one — hmm fernet key is blank. list what's in plugins real quick
+[H5] action=grep_search args=pattern=Config scope=src/schemas/ bucket=flood count=none result=14 matches in 5 files
+[H4] user=drop in a REST_FRAMEWORK throttle config, scoped rate for anon vs user
+[H4] action=apply_patch args=none bucket=ok count=none result=ok; patched 2 files (115+/10-)
+[H3] user=base image is fine, just cuda. rebuild if possible
+[H3] action=run_tests args=target=all bucket=ok count=none result=PASS: 53 tests passed
+[H2] user=let me actually confirm the render count dropped, fire up the app and watch the perf monitor if you can
+[H2] action=run_tests args=target=all bucket=ok count=none result=PASS: 66 tests passed
+[H1] user=when you're free, also HomeScreen probably needs the dependency array tightened on that effect. touch both in one go
+[H1] action=apply_patch args=none bucket=ok count=none result=ok; patched 6 files (16+/3-)
+
+--- SAMPLE ---
+
+[NOW] i added a couple cases to the spec earlier — open it so i can double check, cheers
+[LAST] action=none args=none result_bucket=none count_bucket=none result=none
+[STATE] test=never lint=never edits_after_test=0 edits_after_lint=0 insp_streak=0 last_mod_ext=none open_cnt=0 last_listglob=none
+[SEQ] actions=none
+[FLAG] pf=0 pf_open=0 pf_seen=0 endq=0 exclaim=0 ellipsis=0 has_file_word=1 has_run_word=0 has_edit_word=0 has_finish_word=0
+[META] tier=pro lang=en ci=none dirty=True turn=1 budget=b3 loc=l1 len_bucket=m
+[OPEN] none
+
+--- SAMPLE ---
+
+[NOW] 역시 components에서 useAuth를 다시 부르고 있어. train fit / components transform 으로 분리해야 함. 단계 좀 쪼개줘 ㅎ
+[LAST] action=grep_search args=pattern=useAuth scope=components/ result_bucket=flood count_bucket=none result=found 13 occurrences of 'useAuth'
+[STATE] test=never lint=never edits_after_test=0 edits_after_lint=0 insp_streak=4+ last_mod_ext=none open_cnt=1 last_listglob=none
+[SEQ] actions=list_directory > read_file > read_file > grep_search > grep_search
+[FLAG] pf=0 pf_open=0 pf_seen=0 endq=0 exclaim=0 ellipsis=0 has_file_word=0 has_run_word=0 has_edit_word=0 has_finish_word=0
+[META] tier=free lang=ko ci=failed dirty=True turn=6 budget=b1 loc=l2 len_bucket=m
+[OPEN] components/Button.tsx
+[H5] user=도커 빌드가 pip install 단계에서 죽음. 의존성 파일 좀 열어봐 빨리
+[H5] action=list_directory args=path=components bucket=ok count=4-15 result=listed components: 12 items
+[H4] user=잠시만, 새로 추가한 export 기능 components에 사용법 한 단락 적어두자. 지금 문서 어떻게 구성돼 있어?
+[H4] action=read_file args=path=components/Button.tsx bucket=ok count=none result=ok; classes/functions: useAuth
+[H3] user=별건 아닌데 components 모델 정의 자체에도 문제 없나 한번 짚어보자 가능하면
+[H3] action=read_file args=path=components/Button.tsx bucket=ok count=none result=ok; 258 lines; defines: useAuth
+[H2] user=음... 딥링크로 임의 경로 열리는 거 막아야 해. components/Button.tsx에서 linking 어떻게 받는지부터 가능하면
+[H2] action=grep_search args=pattern=useAuth scope=components/ bucket=flood count=none result=found 17 occurrences of 'useAuth'
+[H1] user=잠깐만 useAuth가 응답 .data.value 읽는데 백엔드는 다른 키로 줄걸. components/Button.tsx 응답 만드는 데 짚어봐
+[H1] action=grep_search args=pattern=useAuth scope=components/ bucket=flood count=none result=found 13 occurrences of 'useAuth'

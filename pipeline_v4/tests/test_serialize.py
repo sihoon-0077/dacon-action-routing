@@ -13,6 +13,7 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--data-dir", default="data")
     parser.add_argument("--golden", default="pipeline_v4/tests/golden_serialize.txt")
+    parser.add_argument("--variant", default="v1")
     parser.add_argument("--update", action="store_true")
     args = parser.parse_args()
     samples = []
@@ -20,7 +21,7 @@ def main():
         samples.append(sample)
         if len(samples) == 3:
             break
-    text = "\n\n--- SAMPLE ---\n\n".join(serialize(sample) for sample in samples) + "\n"
+    text = "\n\n--- SAMPLE ---\n\n".join(serialize(sample, args.variant) for sample in samples) + "\n"
     golden = Path(args.golden)
     golden.parent.mkdir(parents=True, exist_ok=True)
     if args.update or not golden.exists():
