@@ -9,6 +9,7 @@ output/
 *.zip
 submit_*/
 sub_*/
+cand_*/
 baseline_submit/
 
 # Experiment run outputs

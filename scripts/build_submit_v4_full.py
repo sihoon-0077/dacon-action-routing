@@ -85,6 +85,16 @@ def load_optional_decision(path):
     return json.loads(path.read_text(encoding="utf-8"))
 
 
+def parse_actions(raw, default):
+    if not raw:
+        return list(default)
+    actions = [x.strip() for x in raw.split(",") if x.strip()]
+    unknown = sorted(set(actions) - set(ALL_CLASSES))
+    if unknown:
+        raise ValueError(f"unknown actions for override/prefilter: {unknown}")
+    return actions
+
+
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--advanced-router", default="model/advanced_router.pkl")
@@ -98,6 +108,7 @@ def main():
     parser.add_argument("--max-len", type=int, default=512)
     parser.add_argument("--max-transformer-samples", type=int, default=0)
     parser.add_argument("--prefilter-actions", default="")
+    parser.add_argument("--override-actions", default="")
     parser.add_argument("--direct", action="store_true")
     args = parser.parse_args()
 
@@ -124,12 +135,12 @@ def main():
         "temperature": float(temperature),
         "bias_by_class": {name: float(bias_by_class.get(name, 0.0)) for name in ALL_CLASSES},
         "bias_source_adopted": use_bias,
-        "override_actions": DEFAULT_OVERRIDE_ACTIONS,
+        "override_actions": parse_actions(args.override_actions, DEFAULT_OVERRIDE_ACTIONS),
         "override_threshold": float(args.threshold),
         "max_len": int(args.max_len),
         "batch_size": int(args.batch_size),
         "max_transformer_samples": int(args.max_transformer_samples),
-        "prefilter_actions": [x.strip() for x in args.prefilter_actions.split(",") if x.strip()],
+        "prefilter_actions": parse_actions(args.prefilter_actions, []),
         "direct": bool(args.direct),
         "disable_session_lookup": True,
     }
