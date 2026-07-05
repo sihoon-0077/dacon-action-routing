@@ -1,0 +1,18 @@
+{
+  "model": "FacebookAI/xlm-roberta-large",
+  "load_ok": false,
+  "tokenizer_ok": false,
+  "config_ok": false,
+  "cuda_available": true,
+  "gpu_name": "NVIDIA GeForce RTX 4060 Ti",
+  "model_dir_mb": null,
+  "fp16_save_mb": null,
+  "batch_size_384": 0,
+  "inference_1000_sec": null,
+  "estimated_30000_sec": null,
+  "zip_feasible": false,
+  "submit_role": "preflight_failed_or_not_cached",
+  "notes": [
+    "large_not_available_locally:OSError"
+  ]
+}

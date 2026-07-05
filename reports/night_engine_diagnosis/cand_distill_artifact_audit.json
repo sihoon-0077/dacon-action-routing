@@ -1,0 +1,36 @@
+{
+  "zip_path": "C:\\Users\\kiros\\Desktop\\데이콘라워\\cand_distill.zip",
+  "zip_size_mb": 420.26,
+  "component_sizes_mb": {
+    "model/svd.pkl": 389.607,
+    "model/vectorizer.pkl": 1.756,
+    "model/student.pt": 0.996,
+    "model/advanced_router.pkl": 27.908,
+    "script.py": 0.013
+  },
+  "w_student": 0.5,
+  "w_advanced": 0.5,
+  "bias_by_class": {
+    "read_file": 0.10000000149011612,
+    "grep_search": -0.15000000596046448,
+    "list_directory": 0.10000000149011612,
+    "glob_pattern": -0.10000000149011612,
+    "edit_file": 0.05000000074505806,
+    "write_file": 0.0,
+    "apply_patch": -0.05000000074505806,
+    "run_bash": 0.10000000149011612,
+    "run_tests": -0.05000000074505806,
+    "lint_or_typecheck": 0.0,
+    "ask_user": -0.20000000298023224,
+    "plan_task": 0.15000000596046448,
+    "web_search": 0.0,
+    "respond_only": 0.0
+  },
+  "smoke": {
+    "returncode": 0,
+    "elapsed_sec": 9.22547721862793,
+    "stdout_tail": "distill_student: rows=5\nSaved: C:\\Users\\kiros\\Desktop\\데이콘라워\\reports\\night_engine_diagnosis\\smoke_cand_distill\\output\\submission.csv rows=5\n",
+    "stderr_tail": "",
+    "submission_exists": true
+  }
+}

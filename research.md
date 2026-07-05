@@ -1225,3 +1225,61 @@ Artifact:
 Decision:
 - Submit `distill_ib.zip` only if a small safe probe is desired.
 - If it does not beat `0.7174979343`, freeze inspect bias and move to pair-local calibration or inspect-soft-distill.
+
+## V2.3 Open/Profile Signal Validation
+
+- timestamp: `2026-07-06`
+- script: `scripts/run_v23_signal_experiments.py`.
+- goal: validate the new `open_files`, prompt-file relation, meta bucket, and `target_symbol` hypotheses before spending GPU.
+- validation protocol: fold-safe 5-fold proxy using the existing v2.2 serializer plus extra feature tokens.
+
+Proxy result:
+
+| Variant | Macro-F1 | Delta | Inspect4 | Execute3 | Communicate4 |
+|---|---:|---:|---:|---:|---:|
+| `base_v2_2` | `0.514217` | `0.000000` | `0.359723` | `0.455582` | `0.538628` |
+| `v23_open` | `0.515951` | `+0.001734` | `0.361623` | `0.457353` | `0.539136` |
+| `v23_meta` | `0.514168` | `-0.000049` | `0.359461` | `0.454544` | `0.539154` |
+| `v23_target_symbol` | `0.512863` | `-0.001354` | `0.357794` | `0.453687` | `0.538658` |
+| `v23_all` | `0.515925` | `+0.001708` | `0.361606` | `0.454851` | `0.540224` |
+
+Strong lift checks:
+- `open_profile=js_only -> lint_or_typecheck`: lift `2.410`, support `6527`.
+- `open_profile=py_only -> run_tests`: lift `1.455`.
+- `open_profile=none -> write_file`: lift `2.832`; `list_directory`: lift `2.343`; `plan_task`: lift `1.917`.
+- `open_profile=many3+ -> respond_only`: lift `3.261`.
+- `prompt_file_rel=open -> grep_search`: lift `2.245`; `glob_pattern`: lift `1.990`.
+- `prompt_file_rel=not_open -> write_file`: lift `4.032`; `read_file`: lift `1.751`; `list_directory`: lift `1.939`.
+- `budget_bucket_v23=b0 -> ask_user`: lift `5.445`, but support is only `495`.
+
+Decision:
+- Adopt `v23_open` first: `open_profile` + `prompt_file_rel` is the cleanest validated feature block.
+- Do not add `target_symbol` unconditionally yet. It has high raw lift, but the fold-safe proxy was negative.
+- Treat meta buckets as optional/secondary. Budget-low is real, but the full meta block did not improve the proxy.
+- Next GPU test should be a narrow serializer variant: v2.2 baseline vs v2.3-open only.
+
+## Night Engine CPU Diagnosis
+
+- timestamp: `2026-07-06`
+- script: `scripts/run_night_engine_cpu_diagnosis.py`.
+- reports: `reports/night_engine_diagnosis/`.
+
+Backbone audit:
+- Existing `mdeberta384_v2_384_5e` has 5 folds with average best Macro-F1 `0.718031`.
+- Fold bests: fold0 `0.717801`, fold1 `0.716547`, fold2 `0.715503`, fold3 `0.726254`, fold4 `0.714051`.
+- NLL is still decreasing at epoch 5 in `4/5` folds.
+- Fold3 improved by `+0.013106` from epoch4 to epoch5, so undertraining is plausible for at least part of the model family.
+
+Large-model preflight:
+- CUDA is available on the machine.
+- `FacebookAI/xlm-roberta-large` was not available from local cache, so the large path is not yet a valid offline/package candidate.
+
+Submission defense:
+- `cand_distill.zip` smoke passed.
+- local smoke runtime on the 5-row sample was `9.23s`.
+- zip size is about `420.260 MB`.
+
+Decision:
+- Keep `cand_distill.zip` as the current public defense line.
+- A 7-epoch check is justified, but should be gated by OOF because public hard overrides have been failing.
+- Do not chase XLM-R-large until the model is cached and packaging feasibility is proven.
