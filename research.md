@@ -1162,3 +1162,66 @@ Accept/reject:
 - If `v4exec85.zip` beats `0.717`, fold the execute gate into the next hybrid candidate; otherwise keep execute resolver as diagnostic only.
 - If either lands in `0.713~0.717`, mark as diagnostic and do not iterate same-day thresholds.
 - If below `0.713` or runtime is near TLE, reject that axis for public-submit use.
+
+## Public Submit Results - Isolated V4 Probes
+
+- timestamp: `2026-07-06`
+- `cand_distill.zip`: public `0.7174979343`, runtime `2m58s`; current stable baseline.
+- `cand_v4_mod.zip`: public `0.7152288063`, runtime `3m25s`; reject modify-only v4 override.
+- `v4insp04.zip`: public `0.7091872739`, runtime `4m26s`; reject inspect-only v4 override.
+- `v4exec85.zip`: public `0.706080284`, runtime `2m59s`; reject execute-only v4 override.
+
+Decision:
+- V4 candidate-gated hard overrides are not transferring to public hidden data.
+- Stop threshold probing on v4 inspect/execute/modify unless a new OOF-backed soft blending path exists.
+- Keep `cand_distill.zip` as the public baseline.
+
+## Inspect Fast Harness
+
+- timestamp: `2026-07-06`
+- script: `scripts/run_inspect_fast_harness.py`.
+- base: strict distill+bias OOF.
+- base Macro-F1: `0.724084`.
+- base inspect4 Macro-F1: `0.564897`.
+- tested:
+  - TF-IDF word+char `LinearSVC` inspect specialist.
+  - TF-IDF word `LogisticRegression` inspect specialist.
+  - fold-safe normalized template lookup with support/purity gates.
+- best variant: `base_strict_distill_bias`; no specialist beat the base.
+- best non-base template variants changed `0` rows; lower gates changed a few rows and were slightly negative.
+- `LinearSVC`/`LogReg` specialist variants were negative even at high margins.
+
+Decision:
+- Do not build a public zip from a standalone inspect specialist or hard template lookup.
+- Inspect needs soft calibration/distillation or pair-local corrections, not wholesale replacement.
+
+## Inspect Bias Calibration Candidate
+
+- timestamp: `2026-07-06`
+- hypothesis: because `cand_distill` is the only public winner, use a tiny distill-native inspect bias adjustment instead of another transformer override.
+- strict OOF delta: `+0.000427` Macro-F1.
+- inspect4 delta: `+0.001494`.
+- changed rows: `407 / 70000`.
+- fold deltas: `+0.000622`, `+0.000539`, `+0.000626`, `-0.000044`, `+0.000391`.
+- half split:
+  - A->B train delta `+0.000629`, test delta `+0.000039`.
+  - B->A train delta `+0.000177`, test delta `+0.000591`.
+
+Applied inspect bias delta:
+
+| Class | Delta |
+|---|---:|
+| `read_file` | `+0.05` |
+| `grep_search` | `-0.05` |
+| `list_directory` | `+0.05` |
+| `glob_pattern` | `-0.10` |
+
+Artifact:
+- `distill_ib.zip`.
+- smoke: pass, `distill_student: rows=5`.
+- runtime expectation: same as `cand_distill`, around `3m`.
+- risk: small OOF gain; submit only as a low-blast-radius public probe, not as a major leap candidate.
+
+Decision:
+- Submit `distill_ib.zip` only if a small safe probe is desired.
+- If it does not beat `0.7174979343`, freeze inspect bias and move to pair-local calibration or inspect-soft-distill.

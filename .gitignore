@@ -12,6 +12,7 @@ sub_*/
 cand_*/
 v4insp*/
 v4exec*/
+distill_ib*/
 baseline_submit/
 
 # Experiment run outputs
