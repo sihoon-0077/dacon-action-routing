@@ -1102,3 +1102,22 @@ Next action:
 - execute pair resolver: `REJECT`; best=`none`.
 - web hard override: `REJECT`; best=`none`.
 - web boost-only candidates: `0`; submit zip not built.
+
+## Public Submit Result - Strict Distill
+
+- timestamp: `2026-07-06`
+- artifact: `cand_distill.zip` / distill strict submit path.
+- public Macro-F1: `0.717`.
+- server runtime: `2m58s`.
+- local strict reference: final strict OOF Macro-F1 `0.724084`.
+- public gap: about `-0.007`.
+
+Decision:
+- Promote strict distill to the current stable public baseline.
+- Runtime is healthy enough to leave room for small CPU/router post-processing, but not for a second full transformer pass.
+- The result confirms the strict distill line generalizes better than previous v4 20k public `0.712729632`, but it is still far from the `0.76+` target.
+
+Next validation:
+- Submit `cand_v4_mod.zip` as a narrow modify-only teacher probe. It tests whether the high OOF modify3 signal transfers to hidden data without disturbing inspect/execute/communicate.
+- Do not spend more GPU on modify-only training if this probe does not beat the distill baseline.
+- Main leap track remains policy-template reconstruction plus hierarchical gating for inspect/communicate/execute.
