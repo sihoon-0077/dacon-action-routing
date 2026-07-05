@@ -8,6 +8,7 @@ output/
 # Submission packages and extracted submission folders
 *.zip
 submit_*/
+sub_*/
 baseline_submit/
 
 # Experiment run outputs
