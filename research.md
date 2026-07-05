@@ -978,3 +978,85 @@ Next action:
 - Build strict 5-fold advanced OOF probabilities/features using fold-safe advanced-router training, or use the existing historical GroupShuffle validation artifact only as a limited sanity check.
 - Rerun blend/adoption gate with strict advanced OOF features.
 - Only build a real submit zip after strict OOF passes and `script.py` inference path is implemented and smoke-tested.
+
+## Distill Step2 Strict Advanced OOF Rerun
+
+### Setup
+
+- source: follow-up to `Distill Step2 Full Battery`
+- runner: `scripts/run_distill_step2_strict_pipeline.py`
+- strict advanced OOF builder: `scripts/run_strict_advanced_oof.py`
+- strict advanced report: `reports/advanced_oof_strict/SUMMARY.md`
+- strict distill report: `reports/distill_step2_strict/SUMMARY.md`
+- teacher: `pipeline_v4/artifacts/oof/mdeberta384_v2_384_5e`
+- serializer: `v2_2`
+- text features: TF-IDF/SVD, `max_features=160000`, `svd_dim=768`
+- advanced feature source: strict 5-fold advanced-router OOF cache
+
+### Strict Advanced OOF
+
+| Metric | Value |
+|---|---:|
+| Macro-F1 | `0.710559` |
+| accuracy | `0.711229` |
+| NLL | `0.832679` |
+
+Fold Macro-F1:
+
+| Fold | Macro-F1 |
+|---:|---:|
+| 0 | `0.710527` |
+| 1 | `0.713344` |
+| 2 | `0.708044` |
+| 3 | `0.708957` |
+| 4 | `0.711401` |
+
+### Strict Distill Results
+
+Fast students:
+
+| Model | Macro-F1 | Accuracy | NLL |
+|---|---:|---:|---:|
+| D2-G1 hard, no advanced | `0.427698` | `0.419200` | `2.767911` |
+| D2-G2 hard + strict advanced | `0.652948` | `0.667657` | `1.531091` |
+| D2-G3 pseudo t0.55 b0.4 | `0.663437` | `0.678486` | `2.492789` |
+| D2-G3 pseudo t0.65 b0.4 | `0.664209` | `0.680871` | `2.342456` |
+| D2-G3 pseudo t0.75 b0.6 | `0.661663` | `0.679329` | `2.228254` |
+| D2-G4 hybrid imitation | `0.691677` | `0.689429` | `3.096526` |
+
+MLP OOF:
+
+| Model | Macro-F1 | Accuracy | NLL |
+|---|---:|---:|---:|
+| D2-M1 | `0.715189` | `0.716743` | `0.772184` |
+| D2-M2 | `0.716455` | `0.719343` | `0.805393` |
+| D2-M3 | `0.715242` | `0.718314` | `0.835477` |
+| D2-M4 | `0.715263` | `0.719543` | `0.985394` |
+| D2-M5 small MLP | `0.718463` | `0.721857` | `0.815825` |
+| D2-M6 large MLP | `0.715460` | `0.717229` | `0.808185` |
+
+Blend/bias:
+
+| Metric | Value |
+|---|---:|
+| best strict blend | `D2-M5`, student weight `0.5` |
+| blend Macro-F1 | `0.721237` |
+| class bias avg delta | `0.001246` |
+| class bias adopted | `True` |
+| final strict Macro-F1 | `0.724084` |
+| final strict accuracy | `0.724629` |
+| final strict NLL | `0.767905` |
+
+### Decision
+
+Adopt as a strict validation candidate, but do not submit yet.
+
+Reason:
+- The previous diagnostic `0.834668` collapsed once full-fit advanced leakage was removed, confirming the full-fit advanced feature was the optimistic component.
+- The strict pipeline still beats the teacher OOF (`0.718193`) and strict advanced router (`0.710559`) after blend and bias, reaching `0.724084`.
+- A final student was trained into `model/distill_student_strict`, but no submit zip was built yet.
+
+Next action:
+- Implement and smoke-test a real `script.py` inference path for `model/distill_student_strict`.
+- Benchmark against the 10-minute server limit and zip-size limit before submitting.
+- Keep `D2-M5 + strict advanced + bias` as the current leak-safe distillation reference.
