@@ -20,8 +20,11 @@ from pipeline_v4.common.data_io import load_train_samples
 from pipeline_v4.train_fold import (
     EncodedDataset,
     MultiTaskClassifier,
+    NEXT_IGNORE_INDEX,
     apply_overrides,
+    build_next_labels,
     load_config,
+    next_label_coverage,
     parameter_groups,
     save_checkpoint,
     set_seed,
@@ -61,6 +64,8 @@ def main():
 
     samples = load_train_samples(args.data_dir)
     y = np.array([LABEL2ID[s["action"]] for s in samples], dtype=np.int64)
+    aux_next_weight = float(cfg.get("aux_next_weight", 0.0) or 0.0)
+    y_next = build_next_labels(samples) if aux_next_weight > 0 else None
     tokenizer = AutoTokenizer.from_pretrained(cfg["backbone"], use_fast=True)
     serializer = str(cfg.get("serializer", "v1"))
     print(json.dumps({
@@ -71,12 +76,14 @@ def main():
         "serializer": serializer,
         "max_len": int(cfg["max_len"]),
         "epochs": int(cfg["epochs"]),
+        "aux_next_weight": aux_next_weight,
+        "next_coverage": next_label_coverage(y_next) if y_next is not None else 0.0,
     }, ensure_ascii=False), flush=True)
 
     print(f"tokenizing full train serializer={serializer}", flush=True)
     enc = tokenize_samples(samples, tokenizer, int(cfg["max_len"]), serializer)
     loader = DataLoader(
-        EncodedDataset(enc, y),
+        EncodedDataset(enc, y, y_next),
         batch_size=int(cfg["batch_size"]),
         shuffle=True,
         num_workers=0,
@@ -98,6 +105,7 @@ def main():
     scaler = torch.amp.GradScaler("cuda", enabled=use_amp)
     ce_fine = nn.CrossEntropyLoss(label_smoothing=float(cfg["label_smoothing"]))
     ce_coarse = nn.CrossEntropyLoss()
+    ce_next = nn.CrossEntropyLoss(ignore_index=NEXT_IGNORE_INDEX)
 
     history = []
     start = time.time()
@@ -108,10 +116,15 @@ def main():
         for step, batch in enumerate(loader, 1):
             labels = batch.pop("y").to(device)
             y_coarse = batch.pop("y_coarse").to(device)
+            batch_y_next = batch.pop("y_next", None)
+            if batch_y_next is not None:
+                batch_y_next = batch_y_next.to(device)
             batch = {k: v.to(device) for k, v in batch.items()}
             with torch.amp.autocast("cuda", enabled=use_amp, dtype=torch.float16):
-                fine, coarse = model(**batch)
+                fine, coarse, next_logits = model(**batch)
                 loss = ce_fine(fine.float(), labels) + float(cfg["coarse_loss_weight"]) * ce_coarse(coarse.float(), y_coarse)
+                if aux_next_weight > 0 and batch_y_next is not None:
+                    loss = loss + aux_next_weight * ce_next(next_logits.float(), batch_y_next)
                 loss = loss / int(cfg["grad_accum"])
             scaler.scale(loss).backward()
             total_loss += float(loss.detach().cpu()) * int(cfg["grad_accum"])

@@ -19,16 +19,52 @@ from transformers import AutoModel, AutoTokenizer, get_cosine_schedule_with_warm
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 
-from pipeline_v4.common.constants import ALL_CLASSES, COARSE_OF, ID2LABEL, LABEL2ID, SEED
+from pipeline_v4.common.constants import ALL_CLASSES, COARSE_OF, ID2LABEL, LABEL2ID, SEED, session_of
 from pipeline_v4.common.data_io import load_fold_rows, load_train_samples
 from pipeline_v4.serialize import serialize_for_tokenizer
 
 
+NEXT_IGNORE_INDEX = -100
+
+
+def step_of(sample_id):
+    if "-step_" not in sample_id:
+        return -1
+    try:
+        return int(sample_id.rsplit("-step_", 1)[1])
+    except ValueError:
+        return -1
+
+
+def build_next_labels(samples, ignore_index=NEXT_IGNORE_INDEX):
+    """Build within-session next-action labels for an auxiliary training head."""
+    next_by_id = {}
+    by_session = {}
+    for sample in samples:
+        by_session.setdefault(session_of(sample["id"]), []).append(sample)
+    for session_samples in by_session.values():
+        ordered = sorted(session_samples, key=lambda sample: step_of(sample["id"]))
+        for current, nxt in zip(ordered, ordered[1:]):
+            next_by_id[current["id"]] = LABEL2ID[nxt["action"]]
+        if ordered:
+            next_by_id[ordered[-1]["id"]] = ignore_index
+    return np.array([next_by_id.get(sample["id"], ignore_index) for sample in samples], dtype=np.int64)
+
+
+def next_label_coverage(y_next, ignore_index=NEXT_IGNORE_INDEX):
+    y_next = np.asarray(y_next)
+    return float((y_next != ignore_index).mean()) if y_next.size else 0.0
+
+
 class EncodedDataset(Dataset):
-    def __init__(self, encodings, y):
+    def __init__(self, encodings, y, y_next=None):
         self.encodings = encodings
         self.y = torch.tensor(y, dtype=torch.long)
         self.y_coarse = torch.tensor(COARSE_OF[y], dtype=torch.long)
+        if y_next is not None:
+            self.y_next = torch.tensor(y_next, dtype=torch.long)
+        else:
+            self.y_next = None
 
     def __len__(self):
         return len(self.y)
@@ -37,6 +73,8 @@ class EncodedDataset(Dataset):
         item = {key: value[idx] for key, value in self.encodings.items()}
         item["y"] = self.y[idx]
         item["y_coarse"] = self.y_coarse[idx]
+        if self.y_next is not None:
+            item["y_next"] = self.y_next[idx]
         return item
 
 
@@ -48,13 +86,14 @@ class MultiTaskClassifier(nn.Module):
         self.dropout = nn.Dropout(0.1)
         self.head_fine = nn.Linear(h, 14)
         self.head_coarse = nn.Linear(h, 4)
+        self.head_next = nn.Linear(h, 14)
 
     def forward(self, input_ids, attention_mask):
         out = self.encoder(input_ids=input_ids, attention_mask=attention_mask).last_hidden_state
         mask = attention_mask.unsqueeze(-1).float()
         pooled = (out * mask).sum(1) / mask.sum(1).clamp_min(1e-6)
         pooled = self.dropout(pooled)
-        return self.head_fine(pooled), self.head_coarse(pooled)
+        return self.head_fine(pooled), self.head_coarse(pooled), self.head_next(pooled)
 
 
 def set_seed(seed):
@@ -116,6 +155,8 @@ def tokenize_samples(samples, tokenizer, max_len, serializer="v1", batch_size=51
 
 def parameter_groups(model, cfg):
     head_params = list(model.head_fine.parameters()) + list(model.head_coarse.parameters())
+    if hasattr(model, "head_next"):
+        head_params += list(model.head_next.parameters())
     head_ids = {id(p) for p in head_params}
     encoder_params = [p for p in model.parameters() if id(p) not in head_ids]
     return [
@@ -126,28 +167,34 @@ def parameter_groups(model, cfg):
 
 def evaluate(model, loader, device):
     model.eval()
-    fine_all, coarse_all, y_all = [], [], []
+    fine_all, coarse_all, next_all, y_all, y_next_all = [], [], [], [], []
     loss_sum, n = 0.0, 0
     ce = nn.CrossEntropyLoss(reduction="sum")
     with torch.inference_mode():
         for batch in loader:
             y = batch.pop("y").to(device)
+            y_next = batch.pop("y_next", None)
             batch.pop("y_coarse")
             batch = {k: v.to(device) for k, v in batch.items()}
-            fine, coarse = model(**batch)
+            fine, coarse, next_logits = model(**batch)
             loss_sum += float(ce(fine.float(), y).detach().cpu())
             n += int(y.numel())
             fine_all.append(fine.detach().float().cpu().numpy())
             coarse_all.append(coarse.detach().float().cpu().numpy())
+            next_all.append(next_logits.detach().float().cpu().numpy())
             y_all.append(y.detach().cpu().numpy())
+            if y_next is not None:
+                y_next_all.append(y_next.detach().cpu().numpy())
     fine = np.concatenate(fine_all, axis=0)
     coarse = np.concatenate(coarse_all, axis=0)
+    next_logits = np.concatenate(next_all, axis=0)
     y = np.concatenate(y_all, axis=0)
     pred = fine.argmax(axis=1)
     probs = torch.softmax(torch.tensor(fine), dim=1).numpy()
-    return {
+    result = {
         "fine_logits": fine,
         "coarse_logits": coarse,
+        "next_logits": next_logits,
         "probs": probs,
         "y": y,
         "pred": pred,
@@ -156,6 +203,15 @@ def evaluate(model, loader, device):
         "macro_f1": float(f1_score(y, pred, labels=list(range(len(ALL_CLASSES))), average="macro", zero_division=0)),
         "accuracy": float((pred == y).mean()),
     }
+    if y_next_all:
+        y_next = np.concatenate(y_next_all, axis=0)
+        valid_next = y_next != NEXT_IGNORE_INDEX
+        next_pred = next_logits.argmax(axis=1)
+        result["next_y"] = y_next
+        result["next_pred"] = next_pred
+        result["next_coverage"] = float(valid_next.mean()) if y_next.size else 0.0
+        result["next_accuracy"] = float((next_pred[valid_next] == y_next[valid_next]).mean()) if valid_next.any() else 0.0
+    return result
 
 
 def save_class_report(path, y, pred):
@@ -243,6 +299,9 @@ def main():
     train_samples, val_samples = split_samples(samples, folds, args.fold)
     y_train = np.array([LABEL2ID[s["action"]] for s in train_samples], dtype=np.int64)
     y_val = np.array([LABEL2ID[s["action"]] for s in val_samples], dtype=np.int64)
+    aux_next_weight = float(cfg.get("aux_next_weight", 0.0) or 0.0)
+    y_next_train = build_next_labels(train_samples) if aux_next_weight > 0 else None
+    y_next_val = build_next_labels(val_samples) if aux_next_weight > 0 else None
 
     tokenizer = AutoTokenizer.from_pretrained(cfg["backbone"], use_fast=True)
     if not getattr(tokenizer, "is_fast", False):
@@ -256,6 +315,9 @@ def main():
         "val": len(val_samples),
         "train_counts": dict(Counter(ID2LABEL[int(i)] for i in y_train)),
         "val_counts": dict(Counter(ID2LABEL[int(i)] for i in y_val)),
+        "aux_next_weight": aux_next_weight,
+        "train_next_coverage": next_label_coverage(y_next_train) if y_next_train is not None else 0.0,
+        "val_next_coverage": next_label_coverage(y_next_val) if y_next_val is not None else 0.0,
     }, ensure_ascii=False))
 
     serializer = str(cfg.get("serializer", "v1"))
@@ -265,14 +327,14 @@ def main():
     val_enc = tokenize_samples(val_samples, tokenizer, int(cfg["max_len"]), serializer)
 
     train_loader = DataLoader(
-        EncodedDataset(train_enc, y_train),
+        EncodedDataset(train_enc, y_train, y_next_train),
         batch_size=int(cfg["batch_size"]),
         shuffle=True,
         num_workers=0,
         pin_memory=torch.cuda.is_available(),
     )
     val_loader = DataLoader(
-        EncodedDataset(val_enc, y_val),
+        EncodedDataset(val_enc, y_val, y_next_val),
         batch_size=max(8, int(cfg["batch_size"]) * 4),
         shuffle=False,
         num_workers=0,
@@ -303,6 +365,7 @@ def main():
         print("class_weight=sqrt_inv_freq " + json.dumps({ALL_CLASSES[i]: float(weights[i]) for i in range(len(ALL_CLASSES))}, ensure_ascii=False))
     ce_fine = nn.CrossEntropyLoss(weight=class_weight, label_smoothing=float(cfg["label_smoothing"]))
     ce_coarse = nn.CrossEntropyLoss()
+    ce_next = nn.CrossEntropyLoss(ignore_index=NEXT_IGNORE_INDEX)
 
     best = {"fold_val_nll": float("inf"), "epoch": 0}
     history = []
@@ -314,10 +377,15 @@ def main():
         for step, batch in enumerate(train_loader, 1):
             y = batch.pop("y").to(device)
             y_coarse = batch.pop("y_coarse").to(device)
+            y_next = batch.pop("y_next", None)
+            if y_next is not None:
+                y_next = y_next.to(device)
             batch = {k: v.to(device) for k, v in batch.items()}
             with torch.amp.autocast("cuda", enabled=use_amp, dtype=torch.float16):
-                fine, coarse = model(**batch)
+                fine, coarse, next_logits = model(**batch)
                 loss = ce_fine(fine.float(), y) + float(cfg["coarse_loss_weight"]) * ce_coarse(coarse.float(), y_coarse)
+                if aux_next_weight > 0 and y_next is not None:
+                    loss = loss + aux_next_weight * ce_next(next_logits.float(), y_next)
                 loss = loss / int(cfg["grad_accum"])
             scaler.scale(loss).backward()
             total_loss += float(loss.detach().cpu()) * int(cfg["grad_accum"])
@@ -339,6 +407,8 @@ def main():
             "fold_val_nll": metrics["nll"],
             "fold_val_macro_f1": metrics["macro_f1"],
             "fold_val_accuracy": metrics["accuracy"],
+            "fold_val_next_accuracy": metrics.get("next_accuracy"),
+            "fold_val_next_coverage": metrics.get("next_coverage"),
             "elapsed_sec": time.time() - start,
         }
         history.append(row)
@@ -347,6 +417,7 @@ def main():
             best = row.copy()
             np.save(oof_dir / f"fold_{args.fold}_logits.npy", metrics["fine_logits"])
             np.save(oof_dir / f"fold_{args.fold}_coarse.npy", metrics["coarse_logits"])
+            np.save(oof_dir / f"fold_{args.fold}_next.npy", metrics["next_logits"])
             np.save(oof_dir / f"fold_{args.fold}_probs.npy", metrics["probs"])
             np.save(oof_dir / f"fold_{args.fold}_y.npy", metrics["y"])
             (oof_dir / f"fold_{args.fold}_ids.txt").write_text("\n".join(s["id"] for s in val_samples) + "\n", encoding="utf-8")

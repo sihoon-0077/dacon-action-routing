@@ -1169,7 +1169,15 @@ def apply_policy_v4_transformer_override(samples, preds, model_dir):
     config = AutoConfig.from_pretrained(v4_dir, local_files_only=True)
     model = V4MultiTaskClassifier(config)
     state = torch.load(os.path.join(v4_dir, "model.pt"), map_location="cpu")
-    model.load_state_dict(state, strict=True)
+    incompatible = model.load_state_dict(state, strict=False)
+    allowed_prefixes = ("head_next.",)
+    bad_missing = [key for key in incompatible.missing_keys if not key.startswith(allowed_prefixes)]
+    bad_unexpected = [key for key in incompatible.unexpected_keys if not key.startswith(allowed_prefixes)]
+    if bad_missing or bad_unexpected:
+        raise RuntimeError(
+            "v4 model state mismatch: "
+            f"missing={bad_missing[:8]} unexpected={bad_unexpected[:8]}"
+        )
     if device.type == "cuda":
         model.half()
     else:

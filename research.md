@@ -910,7 +910,6 @@ Decision:
 - Adopt `v2_2` as the next serializer candidate.
 - Do not overwrite current `v2` runs or submissions.
 - Next GPU check should be a cheap fold0 gate: `mdeberta_v2_2_384.yaml`, 3 epochs first, pass only if it beats the comparable `v2` fold0 checkpoint by at least `+0.003` Macro-F1 or improves execute F1 enough to justify full retrain.
-
 ## Distill Step2 Full Battery
 
 ### Setup
@@ -1060,3 +1059,46 @@ Next action:
 - Implement and smoke-test a real `script.py` inference path for `model/distill_student_strict`.
 - Benchmark against the 10-minute server limit and zip-size limit before submitting.
 - Keep `D2-M5 + strict advanced + bias` as the current leak-safe distillation reference.
+
+## Inspect Bottleneck Experiments
+
+- timestamp: `2026-07-04 14:39:25`
+- hypothesis: inspect bottleneck should be handled by state decomposition and high-confidence pair correction, not by a standalone 4-class inspect classifier.
+- N2b state-machine: verdict=`FAIL`, high_states=`1`, high_error_coverage=`0.0051`.
+- N2c pair resolvers: verdict=`FAIL`, base_macro=`0.638020`, combined_macro=`0.638020`, adopted=`0`.
+- N2d distill student: status=`skipped`; teacher logits/checkpoint not present in this clone.
+- N4i candidate gating: status=`candidate_only`; candidate-only coverage metrics produced, no transformer runtime/probe built.
+- decision: use N2b/N2c outputs as cheap evidence first; stage compatible transformer logits/checkpoint before N2d/N4i override validation.
+
+## Inspect Bottleneck Experiments
+
+- timestamp: `2026-07-04 14:54:02`
+- hypothesis: inspect bottleneck should be handled by state decomposition and high-confidence pair correction, not by a standalone 4-class inspect classifier.
+- N2b state-machine: verdict=`FAIL`, high_states=`1`, high_error_coverage=`0.0048`.
+- N2c pair resolvers: verdict=`FAIL`, base_macro=`0.709434`, combined_macro=`0.709434`, adopted=`0`.
+- N2d distill student: status=`skipped`; teacher logits/checkpoint not present in this clone.
+- N4i candidate gating: status=`candidate_only`; candidate-only coverage metrics produced, no transformer runtime/probe built.
+- decision: use N2b/N2c outputs as cheap evidence first; stage compatible transformer logits/checkpoint before N2d/N4i override validation.
+
+## Execute Router Rule + Resolver Experiment
+
+- timestamp: `2026-07-04 15:20:47`
+- base Macro-F1: `0.638020`; base execute Macro-F1: `0.645842`.
+- best: `logreg_char_heavy_strict_base_execute_thr0.45`; macro_delta=`0.002527`; execute_delta=`0.011794`; net=`29`.
+- verdict: `PASS`.
+
+## Execute Router Rule + Resolver Experiment
+
+- timestamp: `2026-07-04 15:28:15`
+- base Macro-F1: `0.638020`; base execute Macro-F1: `0.645842`.
+- best: `logreg_word_char_strict_base_execute_thr0.45`; macro_delta=`0.001647`; execute_delta=`0.007688`; net=`12`.
+- verdict: `PASS`.
+
+## Micro Execute/WebSearch Rule Experiment
+
+- timestamp: `2026-07-04 15:52:53`
+- base: `fast_flat local proxy`; split=`pipeline_v4_fold0`; Macro-F1=`0.638020`.
+- execute hard rule: `REJECT`; best=`none`.
+- execute pair resolver: `REJECT`; best=`none`.
+- web hard override: `REJECT`; best=`none`.
+- web boost-only candidates: `0`; submit zip not built.
