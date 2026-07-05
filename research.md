@@ -1139,3 +1139,26 @@ Decision:
 Next action:
 - Keep `cand_distill.zip` as the current public baseline.
 - Focus the next leap attempt on inspect/communicate/execute policy reconstruction, not modify3.
+
+## Public Probe Plan - Inspect/Execute Isolation
+
+- timestamp: `2026-07-06`
+- public baseline to beat: `cand_distill.zip` at about `0.717`, runtime `2m58s`.
+- rule-only postprocessing was checked on strict OOF and rejected before zipping:
+  - execute hand rule delta: about `-0.010`.
+  - communicate hand rule delta: about `-0.049`.
+  - inspect hand rule delta: about `-0.018`.
+- decision: do not submit hand-coded rules; use isolated v4 transformer probes instead.
+
+Predeclared submit probes:
+
+| Artifact | Target | Config | Smoke | Purpose |
+|---|---|---|---|---|
+| `v4insp04.zip` | inspect4 only | `max_len=384`, `batch=64`, `max_samples=20000`, `threshold=0.4`, prefilter/override=`read_file,grep_search,list_directory,glob_pattern` | pass: `selected=2/5 changed=1` | Test whether v4 can fix the inspect bottleneck without touching modify/execute/communicate. |
+| `v4exec85.zip` | execute3 only | `max_len=384`, `batch=64`, `max_samples=16000`, `threshold=0.85`, prefilter/override=`run_bash,run_tests,lint_or_typecheck` | pass: `selected=1/5 changed=0` | Test whether high-confidence v4 execute routing gives a small public lift. |
+
+Accept/reject:
+- If `v4insp04.zip` beats `0.717` under `8m30s`, inspect isolation becomes the next active axis.
+- If `v4exec85.zip` beats `0.717`, fold the execute gate into the next hybrid candidate; otherwise keep execute resolver as diagnostic only.
+- If either lands in `0.713~0.717`, mark as diagnostic and do not iterate same-day thresholds.
+- If below `0.713` or runtime is near TLE, reject that axis for public-submit use.

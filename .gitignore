@@ -10,6 +10,8 @@ output/
 submit_*/
 sub_*/
 cand_*/
+v4insp*/
+v4exec*/
 baseline_submit/
 
 # Experiment run outputs
