@@ -6,7 +6,6 @@ import os
 import shutil
 import sys
 import time
-import zipfile
 from collections import Counter, defaultdict
 from pathlib import Path
 
@@ -892,7 +891,11 @@ def main():
     }
     write_json(Path(args.report_dir) / "blends" / "best_config.json", best_payload)
 
-    adopted = bool(final_metrics["macro_f1"] >= 0.7113236414043568 + 0.005) and not args.smoke_rows
+    # The current full battery recomputes advanced-router probabilities from a
+    # full-fit artifact. That is valid as an inference feature, but not a strict
+    # OOF validation signal. Keep the package gate conservative until a strict
+    # advanced OOF feature cache exists.
+    adopted = False
     submit_zip = None
     if adopted:
         selected = None
@@ -921,17 +924,7 @@ def main():
                 "selected_config": serializable_cfg(selected),
             },
         )
-        submit_zip = "submit_distill_v1.zip"
-        with zipfile.ZipFile(submit_zip, "w", compression=zipfile.ZIP_DEFLATED) as zf:
-            for file in Path(args.model_dir).rglob("*"):
-                if file.is_file():
-                    zf.write(file, Path("model") / file.relative_to(args.model_dir))
-            zf.writestr("requirements.txt", "\n")
-            zf.writestr(
-                "script.py",
-                "raise SystemExit('distill submit runtime packaging is pending final script generation; do not submit this zip yet')\n",
-            )
-        status.update("package", f"built placeholder {submit_zip}", add_units=0.5)
+        submit_zip = None
 
     write_summary(
         Path(args.report_dir) / "SUMMARY.md",
