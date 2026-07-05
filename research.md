@@ -1121,3 +1121,21 @@ Next validation:
 - Submit `cand_v4_mod.zip` as a narrow modify-only teacher probe. It tests whether the high OOF modify3 signal transfers to hidden data without disturbing inspect/execute/communicate.
 - Do not spend more GPU on modify-only training if this probe does not beat the distill baseline.
 - Main leap track remains policy-template reconstruction plus hierarchical gating for inspect/communicate/execute.
+
+## Public Submit Result - V4 Modify-Only Probe
+
+- timestamp: `2026-07-06`
+- artifact: `cand_v4_mod.zip`.
+- public Macro-F1: `0.7152288063`.
+- server runtime: `3m25s`.
+- local OOF rationale: teacher modify3 override was stable in OOF and lifted strict blend from `0.724084` to about `0.733085`.
+- public comparison: below strict distill baseline `0.717`.
+
+Decision:
+- Reject modify-only transformer override as a standalone submit path.
+- The strong OOF modify3 signal does not transfer enough to public hidden data when exposed through this candidate-gated submit script.
+- Do not spend more experiments on modify-only teacher override unless it is embedded as a protected component inside a broader hierarchical router.
+
+Next action:
+- Keep `cand_distill.zip` as the current public baseline.
+- Focus the next leap attempt on inspect/communicate/execute policy reconstruction, not modify3.
