@@ -740,13 +740,30 @@ def make_mlp_configs(epochs):
     ]
 
 
-def write_summary(path, teacher_metrics, adv_metrics, fast_results, mlp_results, best_blend, bias_payload, adopted, submit_zip):
+def write_summary(
+    path,
+    teacher_metrics,
+    adv_metrics,
+    fast_results,
+    mlp_results,
+    best_blend,
+    bias_payload,
+    adopted,
+    submit_zip,
+    advanced_feature_source,
+):
+    advanced_label = "advanced strict-OOF feature baseline"
+    caution = "- Advanced router probabilities came from strict fold-held-out OOF features."
+    if advanced_feature_source != "strict_oof":
+        advanced_label = "advanced full-fit feature baseline"
+        caution = "- Advanced router probabilities were recomputed from the existing full-fit artifact; treat blend scores as diagnostic until strict OOF advanced features are used."
     lines = [
         "# Distill Step2 Summary",
         "",
         f"- finished_at: `{now()}`",
         f"- teacher OOF Macro-F1: `{teacher_metrics['macro_f1']:.6f}`",
-        f"- advanced full-fit feature baseline Macro-F1: `{adv_metrics['macro_f1']:.6f}`",
+        f"- {advanced_label} Macro-F1: `{adv_metrics['macro_f1']:.6f}`",
+        f"- advanced feature source: `{advanced_feature_source}`",
         f"- best blend Macro-F1: `{best_blend['macro_f1']:.6f}`",
         f"- bias adopted: `{bias_payload['adopted']}`",
         f"- final adopted: `{adopted}`",
@@ -771,7 +788,7 @@ def write_summary(path, teacher_metrics, adv_metrics, fast_results, mlp_results,
             "",
             "- Teacher probabilities were used only as training targets, not inference features.",
             "- TF-IDF/SVD was fit on full train text for the quick full battery; record this as unsupervised feature-cache shortcut.",
-            "- Advanced router probabilities were recomputed from the existing full-fit artifact because they are available at inference time.",
+            caution,
         ]
     )
     Path(path).parent.mkdir(parents=True, exist_ok=True)
@@ -784,6 +801,7 @@ def main():
     parser.add_argument("--fold-file", default="pipeline_v4/folds/fold_assignments.csv")
     parser.add_argument("--teacher-oof", default="pipeline_v4/artifacts/oof/mdeberta384_v2_384_5e")
     parser.add_argument("--advanced-model", default="model/advanced_router.pkl")
+    parser.add_argument("--advanced-oof-dir", default="")
     parser.add_argument("--artifact-dir", default="artifacts/distill_step2")
     parser.add_argument("--report-dir", default="reports/distill_step2")
     parser.add_argument("--model-dir", default="model/distill_student")
@@ -793,6 +811,7 @@ def main():
     parser.add_argument("--epochs", type=int, default=30)
     parser.add_argument("--smoke-rows", type=int, default=0)
     parser.add_argument("--smoke-configs", default="")
+    parser.add_argument("--adopt-threshold", type=float, default=0.7163236414043568)
     args = parser.parse_args()
 
     np.random.seed(SEED)
@@ -832,9 +851,22 @@ def main():
         samples, args.serializer, args.max_features, args.svd_dim, Path(args.artifact_dir) / "features", status
     )
     status.update("advanced", "computing advanced features", done_units=2.2)
-    adv_artifact = joblib.load(args.advanced_model)
-    adv_scores, adv_probs, adv_pred, adv_group = predict_advanced_with_scores(samples, adv_artifact)
-    adv_features = advanced_feature_matrix(adv_probs, adv_pred, adv_group)
+    advanced_feature_source = "full_fit"
+    adv_oof_dir = Path(args.advanced_oof_dir) if args.advanced_oof_dir else None
+    if adv_oof_dir and (adv_oof_dir / "advanced_oof_probs.npy").exists() and (adv_oof_dir / "advanced_features.npy").exists():
+        advanced_feature_source = "strict_oof"
+        status.update("advanced", f"loading strict OOF advanced features from {adv_oof_dir}", done_units=2.25)
+        adv_probs = np.load(adv_oof_dir / "advanced_oof_probs.npy").astype(np.float32)
+        adv_features = np.load(adv_oof_dir / "advanced_features.npy").astype(np.float32)
+        adv_pred = np.load(adv_oof_dir / "advanced_oof_pred.npy").astype(np.int64)
+        if len(adv_probs) != len(samples):
+            raise RuntimeError(f"advanced OOF row mismatch: {len(adv_probs)} != {len(samples)}")
+        adv_scores_path = adv_oof_dir / "advanced_oof_scores.npy"
+        adv_scores = np.load(adv_scores_path).astype(np.float32) if adv_scores_path.exists() else np.log(np.clip(adv_probs, 1e-12, 1.0))
+    else:
+        adv_artifact = joblib.load(args.advanced_model)
+        adv_scores, adv_probs, adv_pred, adv_group = predict_advanced_with_scores(samples, adv_artifact)
+        adv_features = advanced_feature_matrix(adv_probs, adv_pred, adv_group)
     np.save(Path(args.artifact_dir) / "features" / "advanced_probs.npy", adv_probs)
     np.save(Path(args.artifact_dir) / "features" / "advanced_features.npy", adv_features)
     adv_metrics = metrics_from_probs(y, adv_probs)
@@ -887,15 +919,12 @@ def main():
         "bias": bias_payload,
         "final_metrics": final_metrics,
         "advanced_reference_f1": 0.7113236414043568,
-        "adopt_gate": "final_macro_f1 >= 0.716323641",
+        "advanced_feature_source": advanced_feature_source,
+        "adopt_gate": f"strict_oof and final_macro_f1 >= {args.adopt_threshold:.9f}",
     }
     write_json(Path(args.report_dir) / "blends" / "best_config.json", best_payload)
 
-    # The current full battery recomputes advanced-router probabilities from a
-    # full-fit artifact. That is valid as an inference feature, but not a strict
-    # OOF validation signal. Keep the package gate conservative until a strict
-    # advanced OOF feature cache exists.
-    adopted = False
+    adopted = bool(advanced_feature_source == "strict_oof" and final_metrics["macro_f1"] >= args.adopt_threshold and not args.smoke_rows)
     submit_zip = None
     if adopted:
         selected = None
@@ -936,6 +965,7 @@ def main():
         bias_payload,
         adopted,
         submit_zip,
+        advanced_feature_source,
     )
     status.update(
         "finished",

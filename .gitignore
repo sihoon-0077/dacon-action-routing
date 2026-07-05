@@ -29,6 +29,7 @@ research_runs_smoke/
 # v4 pipeline generated heavy artifacts
 /pipeline_v4/artifacts/
 /artifacts/distill_step2*/
+/artifacts/advanced_oof_strict*/
 
 # Python cache
 __pycache__/
