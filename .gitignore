@@ -7,6 +7,8 @@ output/
 
 # Submission packages and extracted submission folders
 *.zip
+!cand_distill.zip
+!distill_ib.zip
 submit_*/
 sub_*/
 cand_*/
