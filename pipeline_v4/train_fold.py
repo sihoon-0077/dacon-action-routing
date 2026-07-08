@@ -79,10 +79,22 @@ class EncodedDataset(Dataset):
 
 
 class MultiTaskClassifier(nn.Module):
-    def __init__(self, backbone):
+    def __init__(self, backbone, cfg=None):
         super().__init__()
-        self.encoder = AutoModel.from_pretrained(backbone)
-        h = self.encoder.config.hidden_size
+        cfg = cfg or {}
+        trust_remote_code = bool(cfg.get("trust_remote_code", False))
+        self.encoder = AutoModel.from_pretrained(backbone, trust_remote_code=trust_remote_code)
+        if bool(cfg.get("gradient_checkpointing", False)) and hasattr(self.encoder, "gradient_checkpointing_enable"):
+            self.encoder.gradient_checkpointing_enable()
+            if hasattr(self.encoder, "config"):
+                self.encoder.config.use_cache = False
+        h = (
+            getattr(self.encoder.config, "hidden_size", None)
+            or getattr(self.encoder.config, "dim", None)
+            or getattr(self.encoder.config, "d_model", None)
+        )
+        if h is None:
+            raise AttributeError(f"cannot infer hidden size from config: {self.encoder.config}")
         self.dropout = nn.Dropout(0.1)
         self.head_fine = nn.Linear(h, 14)
         self.head_coarse = nn.Linear(h, 4)
@@ -269,6 +281,16 @@ def save_checkpoint(model, tokenizer, model_dir, cfg, fold, epoch, metrics):
     (model_dir / "model_config.json").write_text(json.dumps(payload, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
 
 
+def better_than_best(row, best, selector):
+    if best.get("epoch", 0) == 0:
+        return True
+    if selector == "fold_val_macro_f1_max":
+        return float(row["fold_val_macro_f1"]) > float(best.get("fold_val_macro_f1", -1.0))
+    if selector == "fold_val_accuracy_max":
+        return float(row["fold_val_accuracy"]) > float(best.get("fold_val_accuracy", -1.0))
+    return float(row["fold_val_nll"]) < float(best.get("fold_val_nll", float("inf")))
+
+
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--fold", type=int, required=True)
@@ -303,7 +325,11 @@ def main():
     y_next_train = build_next_labels(train_samples) if aux_next_weight > 0 else None
     y_next_val = build_next_labels(val_samples) if aux_next_weight > 0 else None
 
-    tokenizer = AutoTokenizer.from_pretrained(cfg["backbone"], use_fast=True)
+    tokenizer = AutoTokenizer.from_pretrained(
+        cfg["backbone"],
+        use_fast=True,
+        trust_remote_code=bool(cfg.get("trust_remote_code", False)),
+    )
     if not getattr(tokenizer, "is_fast", False):
         raise RuntimeError("fast tokenizer required by v4 spec")
 
@@ -342,7 +368,7 @@ def main():
     )
 
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    model = MultiTaskClassifier(cfg["backbone"])
+    model = MultiTaskClassifier(cfg["backbone"], cfg)
     # Keep trainable weights in fp32; autocast handles fp16 activations. Some
     # local HF configs record fp16 dtype and would otherwise create fp16 grads.
     model.float()
@@ -367,7 +393,8 @@ def main():
     ce_coarse = nn.CrossEntropyLoss()
     ce_next = nn.CrossEntropyLoss(ignore_index=NEXT_IGNORE_INDEX)
 
-    best = {"fold_val_nll": float("inf"), "epoch": 0}
+    selector = str(cfg.get("select_best_by", "fold_val_nll_min"))
+    best = {"fold_val_nll": float("inf"), "fold_val_macro_f1": -1.0, "epoch": 0, "select_best_by": selector}
     history = []
     start = time.time()
     for epoch in range(1, int(cfg["epochs"]) + 1):
@@ -413,8 +440,9 @@ def main():
         }
         history.append(row)
         print("eval " + json.dumps(row, ensure_ascii=False), flush=True)
-        if row["fold_val_nll"] < best["fold_val_nll"]:
+        if better_than_best(row, best, selector):
             best = row.copy()
+            best["select_best_by"] = selector
             np.save(oof_dir / f"fold_{args.fold}_logits.npy", metrics["fine_logits"])
             np.save(oof_dir / f"fold_{args.fold}_coarse.npy", metrics["coarse_logits"])
             np.save(oof_dir / f"fold_{args.fold}_next.npy", metrics["next_logits"])
