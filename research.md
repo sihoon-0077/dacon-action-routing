@@ -1519,3 +1519,27 @@ Interpretation:
 - If this beats `cand_v4_25k.zip`, the base router/override gate is blocking useful transformer decisions.
 - If it underperforms, the current base-router + restricted override design is acting as a useful safety gate.
 - Runtime risk is higher than `cand_v4_25k.zip` because all 30k rows go through the transformer instead of 25k.
+
+## cand30 Router vs Direct Probes
+
+- timestamp: `2026-07-10`
+- source submit: `cand_v4_25k.zip`
+- purpose: test a 30k transformer cap with and without the first-stage base router.
+
+Candidates:
+
+| Submit | Base Router | Bias | Direct | Max Transformer Samples | Override Actions | Smoke |
+|---|---|---|---|---:|---|---|
+| `cand30_router.zip` | kept | none | `false` | `30000` | original restricted set | pass, `changed=1/5` |
+| `cand30_direct.zip` | effectively removed | none | `true` | `30000` | all classes, irrelevant under direct | pass, `changed=2/5` |
+
+Shared config:
+- max_len: `384`.
+- batch_size: `64`.
+- temperature: `1.0`.
+- zip size: about `546.701 MB` each.
+
+Interpretation:
+- Compare `cand30_router.zip` against `cand_v4_25k.zip` to test whether expanding transformer coverage from 25k to 30k helps while keeping the safety gate.
+- Compare `cand30_direct.zip` against `cand30_router.zip` to test whether the base router/override gate is beneficial.
+- Runtime is expected to be near the 10-minute limit because both run the transformer on up to 30k rows.
