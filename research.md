@@ -1492,3 +1492,30 @@ Conclusion:
 - The restricted bias version still trails the raw current best by `-0.000857`, so the OOF-tuned bias does not transfer cleanly to the full-data/candidate-capped submit pipeline.
 - Keep `cand_v4_25k.zip` as the primary public defense line.
 - Do not submit more global bias variants until the exact submit policy is reproduced in OOF or a class-local bias is tuned only inside the original override action set.
+
+## cand25 Direct Transformer Probe
+
+- timestamp: `2026-07-10`
+- new submit: `cand25_direct.zip`
+- source submit: `cand_v4_25k.zip`
+- purpose: test whether the base router is helping or hurting.
+- effective behavior: use the v4 transformer prediction for every test row; base router predictions are computed by the script but overwritten for all rows.
+
+Config:
+- bias: all zero.
+- temperature: `1.0`.
+- direct: `true`.
+- max_transformer_samples: `0` meaning no candidate cap.
+- max_len: `384`.
+- batch_size: `64`.
+- override_actions: all 14 classes, but irrelevant because `direct=true`.
+- zip size: about `546.701 MB`.
+
+Smoke:
+- local CPU smoke on 5-row sample: pass.
+- output: `policy_v4_transformer: selected=5/5 changed=2 threshold=0.0 direct=True max_samples=0`.
+
+Interpretation:
+- If this beats `cand_v4_25k.zip`, the base router/override gate is blocking useful transformer decisions.
+- If it underperforms, the current base-router + restricted override design is acting as a useful safety gate.
+- Runtime risk is higher than `cand_v4_25k.zip` because all 30k rows go through the transformer instead of 25k.
