@@ -1,6 +1,7 @@
 import csv
 import json
 import math
+import os
 import re
 from collections import Counter, defaultdict
 from pathlib import Path
@@ -419,8 +420,29 @@ def write_summary(rows, base_macro, base_inspect):
     return rows
 
 
+def use_cached_result():
+    if os.environ.get("FORCE_INSPECT_AUTORESEARCH") == "1":
+        return False
+    results_path = OUT / "results.csv"
+    summary_path = OUT / "summary.md"
+    script_path = Path(__file__).resolve()
+    if not (results_path.exists() and summary_path.exists()):
+        return False
+    if results_path.stat().st_mtime < script_path.stat().st_mtime:
+        return False
+    print("# Inspect Autoresearch", flush=True)
+    print("", flush=True)
+    print("- cached: `true`", flush=True)
+    print("- reason: previous inspect pair/rule sweep is newer than the script; set FORCE_INSPECT_AUTORESEARCH=1 to rerun.", flush=True)
+    print("", flush=True)
+    print(summary_path.read_text(encoding="utf-8").split("## Top Variants")[0], flush=True)
+    return True
+
+
 def main():
     OUT.mkdir(parents=True, exist_ok=True)
+    if use_cached_result():
+        return
     samples = read_jsonl(ROOT / "data" / "train.jsonl")
     label_map = load_labels(ROOT / "data" / "train_labels.csv")
     y = np.array([label_map[s["id"]] for s in samples], dtype=object)

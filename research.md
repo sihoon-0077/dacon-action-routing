@@ -1731,3 +1731,20 @@ Patch applied:
 - removed noisy prediction-pair interaction features from the meta-router feature set.
 - removed `sgdlong_*` from the active grid to recover loop speed.
 - added base uncertainty scopes: low margin (`<=0.05`, `<=0.10`, `<=0.20`, `<=0.35`), high entropy (`>=1.40`, `>=1.80`, `>=2.20`), and uncertain non-modify rows.
+
+Heartbeat update:
+- timestamp: `2026-07-10 06:24 KST`
+- cycle: `8`, stage: `running_inspect_autoresearch`.
+- uncertainty-scoped meta-router completed and did not improve the historical best. The best remains `sgd_0.00003_all_all_thr0.45`, strict Macro-F1 `0.740676`, delta `+0.016592`.
+- uncertainty variants topped out around delta `+0.0093`, so "only override uncertain base rows" is too restrictive.
+- `+0.03` gate remains closed.
+
+New hypotheses:
+- H-AUTO-13: the current inspect pair/rule sweep is exhausted; repeatedly rerunning it burns time without adding signal.
+- H-AUTO-14: the productive path is meta-router or deployable submit-policy simulation, so loop time should be reallocated away from unchanged inspect sweeps.
+- H-AUTO-15: keep replay audit as a light guard, but cache heavy deterministic CPU sweeps unless their script changes.
+
+Patch applied:
+- added a cache guard to `scripts/run_inspect_autoresearch.py`.
+- if `reports/inspect_autoresearch/results.csv` and `summary.md` are newer than the script, it prints the cached summary and exits.
+- set `FORCE_INSPECT_AUTORESEARCH=1` to rerun the full sweep explicitly.
