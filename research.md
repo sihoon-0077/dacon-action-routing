@@ -1345,3 +1345,34 @@ Decision:
 - Reject `granite_ep2.zip` as a primary submit candidate.
 - Keep the result as evidence that larger encoder experiments must use either 5-fold OOF or full-data training before public submission.
 - Do not spend another public submit on Granite fold0 variants unless OOF/full-data evidence clears the current `0.7175` public defense line.
+
+## Current Public Best: cand_v4_25k
+
+- timestamp: `2026-07-09`
+- submit: `cand_v4_25k.zip`
+- public submission id: `27880`
+- public Macro-F1: `0.7191250861`
+- server runtime: `7m 22s`
+- local file: `cand_v4_25k.zip`
+- zip size: about `546.701 MB`
+
+Current public leaderboard among our candidates:
+
+| Rank | Candidate | Public Macro-F1 | Runtime | Decision |
+|---:|---|---:|---:|---|
+| 1 | `cand_v4_25k.zip` | `0.7191250861` | `7m 22s` | current best / defense line |
+| 2 | `cand_distill.zip` | `0.7174979343` | `2m 58s` | faster fallback |
+| 3 | `cand_v4_mod.zip` | `0.7152288063` | `3m 25s` | rejected vs current best |
+| 4 | `v4ep5_384_20k.zip` | `0.7127296320` | `6m 05s` | weaker than 25k candidate |
+| 5 | `v4ep3_384_20k.zip` | `0.7101909354` | `6m 08s` | weaker |
+| 6 | `granite_ep2.zip` | `0.7093429258` | `4m 33s` | rejected |
+
+Interpretation:
+- The best public result still comes from the mDeBERTa/v4 candidate-expansion path, not Granite or distill-only.
+- Increasing candidate coverage to `25k` appears more useful than switching to a larger fold0-only encoder.
+- Runtime is close to the 10-minute limit but still acceptable on the server.
+
+Decision:
+- Treat `cand_v4_25k.zip` as the current primary submit candidate.
+- Keep `cand_distill.zip` as the safe fast fallback.
+- Future public submissions should beat `0.719125` locally by a clear margin or target a specific failure mode; small fold0-only backbone gains are not enough.
