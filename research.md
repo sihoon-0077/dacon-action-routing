@@ -1556,3 +1556,26 @@ Conclusion:
 - Removing the base router/gate is clearly harmful: `cand30_direct.zip` trails `cand30_router.zip` by `-0.010413`.
 - `cand25_direct.zip` and `cand30_direct.zip` produce the same public score, consistent with direct mode already evaluating all 30k rows when `max_transformer_samples=0` or covering essentially the full public test.
 - Current direction: keep base router + restricted override; tune candidate selection/coverage rather than removing the router or adding global bias.
+
+## cand30 GroupGate and Len448 Probes
+
+- timestamp: `2026-07-10`
+- source submit: `cand30_router.zip`
+- current public best before these probes: `cand30_router.zip`, Macro-F1 `0.7213901601`, runtime `8m 12s`.
+
+Candidates:
+
+| Submit | Purpose | Base Router | Direct | Max Len | Max Samples | Override Policy | Smoke |
+|---|---|---|---|---:|---:|---|---|
+| `cand30_groupgate.zip` | allow same coarse-group corrections | kept | `false` | `384` | `30000` | restricted set + same `ADVANCED_ACTION_TO_GROUP` | pass, `changed=2/5` |
+| `cand30_len448.zip` | reduce transformer context truncation | kept | `false` | `448` | `30000` | original restricted set | pass, `changed=1/5` |
+
+Implementation notes:
+- `cand30_groupgate.zip` patches `script.py` so transformer override is allowed if either the predicted action is in the original restricted set or the base prediction and transformer prediction share the same coarse group.
+- `cand30_len448.zip` changes only `max_len` from `384` to `448` while preserving the current best router policy.
+- Both keep `batch_size=64`, no global bias, and `temperature=1.0`.
+
+Expected readout:
+- If `cand30_groupgate.zip` improves, execute/dialogue within-group corrections were being blocked too aggressively.
+- If `cand30_len448.zip` improves, context truncation is still a bottleneck.
+- If both regress, keep `cand30_router.zip` as the defense line and move to OOF-simulated candidate selection rather than broader gates.
