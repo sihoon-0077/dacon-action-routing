@@ -1543,3 +1543,16 @@ Interpretation:
 - Compare `cand30_router.zip` against `cand_v4_25k.zip` to test whether expanding transformer coverage from 25k to 30k helps while keeping the safety gate.
 - Compare `cand30_direct.zip` against `cand30_router.zip` to test whether the base router/override gate is beneficial.
 - Runtime is expected to be near the 10-minute limit because both run the transformer on up to 30k rows.
+
+Public result:
+- `cand30_router.zip`: public Macro-F1 `0.7213901601`, runtime `8m 12s`.
+- `cand30_direct.zip`: public Macro-F1 `0.7109775567`, runtime `8m 14s`.
+- `cand25_direct.zip`: public Macro-F1 `0.7109775567`, runtime `8m 07s`.
+- previous best `cand_v4_25k.zip`: public Macro-F1 `0.7191250861`, runtime `7m 22s`.
+
+Conclusion:
+- New public best is `cand30_router.zip` at `0.7213901601`.
+- Expanding transformer coverage from 25k to 30k while keeping the base-router safety gate improved public by `+0.002265`.
+- Removing the base router/gate is clearly harmful: `cand30_direct.zip` trails `cand30_router.zip` by `-0.010413`.
+- `cand25_direct.zip` and `cand30_direct.zip` produce the same public score, consistent with direct mode already evaluating all 30k rows when `max_transformer_samples=0` or covering essentially the full public test.
+- Current direction: keep base router + restricted override; tune candidate selection/coverage rather than removing the router or adding global bias.
