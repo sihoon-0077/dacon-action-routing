@@ -1481,3 +1481,14 @@ Smoke:
 Interpretation:
 - If this beats `cand25_bias.zip`, the all-class override was the damaging part.
 - If this also underperforms `cand_v4_25k.zip`, the OOF-tuned bias itself is mismatched to the full-data submit model/candidate pipeline.
+
+Public result:
+- `cand25_bias.zip`: public Macro-F1 `0.7054955902`, runtime `7m 12s`.
+- `cand25_restrict.zip`: public Macro-F1 `0.7182681696`, runtime `7m 08s`.
+- current best `cand_v4_25k.zip`: public Macro-F1 `0.7191250861`, runtime `7m 22s`.
+
+Conclusion:
+- Restricting override actions recovered `+0.012773` over all-class bias, so the all-class override was the damaging part.
+- The restricted bias version still trails the raw current best by `-0.000857`, so the OOF-tuned bias does not transfer cleanly to the full-data/candidate-capped submit pipeline.
+- Keep `cand_v4_25k.zip` as the primary public defense line.
+- Do not submit more global bias variants until the exact submit policy is reproduced in OOF or a class-local bias is tuned only inside the original override action set.
