@@ -1748,3 +1748,20 @@ Patch applied:
 - added a cache guard to `scripts/run_inspect_autoresearch.py`.
 - if `reports/inspect_autoresearch/results.csv` and `summary.md` are newer than the script, it prints the cached summary and exits.
 - set `FORCE_INSPECT_AUTORESEARCH=1` to rerun the full sweep explicitly.
+
+Heartbeat update:
+- timestamp: `2026-07-10 06:54 KST`
+- cycle: `8`, stage: `sleeping`.
+- best remains `sgd_0.00003_all_all_thr0.45`, strict Macro-F1 `0.740676`, delta `+0.016592`.
+- uncertainty-scoped variants did not improve; the top uncertainty scope was about delta `+0.0093`.
+- `+0.03` gate remains closed.
+
+New hypotheses:
+- H-AUTO-16: elasticnet SGD may be dropping weak but useful state signals; l2-only regularization may keep them.
+- H-AUTO-17: averaged SGD may stabilize the OOF meta-router without the runtime cost of long convergence.
+- H-AUTO-18: if l2/averaged SGD does not improve, the local linear meta-router family is saturated and effort should move to packaging or a different feature source.
+
+Patch applied:
+- added `sgdl2_0.00003` and `sgdl2_0.00005` all-class probes.
+- added `sgdavg_0.00003` and `sgdavg_0.00005` all-class probes.
+- these reuse the existing threshold/scope grid and should be cheaper than the rejected `sgdlong_*` probes.

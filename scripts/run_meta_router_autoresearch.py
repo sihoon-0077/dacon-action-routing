@@ -313,6 +313,32 @@ def pair_fixed(y, base, pred):
 
 
 def build_model(kind):
+    if kind.startswith("sgdavg"):
+        alpha = float(kind.rsplit("_", 1)[1])
+        return SGDClassifier(
+            loss="log_loss",
+            alpha=alpha,
+            penalty="elasticnet",
+            l1_ratio=0.05,
+            class_weight="balanced",
+            max_iter=120,
+            tol=1e-4,
+            average=True,
+            random_state=42,
+            n_jobs=-1,
+        )
+    if kind.startswith("sgdl2"):
+        alpha = float(kind.rsplit("_", 1)[1])
+        return SGDClassifier(
+            loss="log_loss",
+            alpha=alpha,
+            penalty="l2",
+            class_weight="balanced",
+            max_iter=100,
+            tol=1e-4,
+            random_state=42,
+            n_jobs=-1,
+        )
     if kind.startswith("sgdlong"):
         alpha = float(kind.rsplit("_", 1)[1])
         return SGDClassifier(
@@ -520,6 +546,10 @@ def main():
         ("sgd_0.00005", "all", THRESHOLDS_FINE),
         ("sgd_0.00007", "all", THRESHOLDS_FINE),
         ("sgd_0.0001", "all", THRESHOLDS_FINE),
+        ("sgdl2_0.00003", "all", THRESHOLDS_FINE),
+        ("sgdl2_0.00005", "all", THRESHOLDS_FINE),
+        ("sgdavg_0.00003", "all", THRESHOLDS_FINE),
+        ("sgdavg_0.00005", "all", THRESHOLDS_FINE),
         ("sgd_0.00003", "inspect", THRESHOLDS_FINE),
         ("sgd_0.0001", "inspect", THRESHOLDS_FINE),
         ("sgd_0.00003", "execute", THRESHOLDS_FINE),
