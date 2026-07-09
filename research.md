@@ -1408,3 +1408,25 @@ Packaging:
 Decision:
 - Submit as the next public probe against the current `0.719125` defense line.
 - If public score falls below `cand_v4_25k.zip`, rollback the all-class override and test a conservative bias-only variant that keeps the old restricted override action set.
+
+## cand30 Bias Candidate
+
+- timestamp: `2026-07-09`
+- source submit: `cand25_bias.zip`
+- new submit: `cand30_bias.zip`
+- change: `max_transformer_samples` from `25000` to `30000`; keep the same temperature+bias decision rule.
+- decision rule: `argmax(log_softmax(logits / 1.0010827404120315) + bias_by_class)`.
+- override actions: all 14 classes.
+- max_len: `384`.
+- batch_size: `64`.
+- zip size: about `546.702 MB`.
+- local CPU smoke on the 5-row sample: pass.
+- smoke output: `policy_v4_transformer: selected=5/5 changed=2 threshold=0.0 direct=False max_samples=30000`.
+
+Runtime expectation:
+- `cand_v4_25k.zip` server runtime was `7m 22s`.
+- A 30k cap is expected to be roughly `8.5m~9m+`, so this is a higher-risk TLE probe but still plausibly inside the 10-minute limit.
+
+Decision:
+- Submit only if we are comfortable spending a higher-runtime public probe.
+- If this times out or regresses, keep `cand_v4_25k.zip`/`cand25_bias.zip` as safer lines and avoid 30k+ caps without candidate selection improvements.
