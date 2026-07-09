@@ -1579,3 +1579,13 @@ Expected readout:
 - If `cand30_groupgate.zip` improves, execute/dialogue within-group corrections were being blocked too aggressively.
 - If `cand30_len448.zip` improves, context truncation is still a bottleneck.
 - If both regress, keep `cand30_router.zip` as the defense line and move to OOF-simulated candidate selection rather than broader gates.
+
+Public result:
+- `cand30_groupgate.zip`: public Macro-F1 `0.7106544208`, runtime `8m 13s`.
+- current best `cand30_router.zip`: public Macro-F1 `0.7213901601`, runtime `8m 12s`.
+
+Conclusion:
+- Group-gated override regressed by `-0.010736` versus `cand30_router.zip`.
+- Even same-coarse-group override is too broad; it behaves closer to the failed direct/all-class style than to the safe restricted override.
+- Reject group-gate and keep the original restricted override set.
+- Wait for `cand30_len448.zip` result to decide whether context length, not gate width, is the next useful lever.
