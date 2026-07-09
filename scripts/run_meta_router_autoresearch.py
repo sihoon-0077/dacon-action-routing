@@ -222,30 +222,13 @@ def cat_features(sample, adv_pred, teacher_pred, d2_pred, base_pred):
     meta = sample.get("session_meta") or {}
     ws = meta.get("workspace") or {}
     acts = last_actions(sample, 4)
-    base_group = ACTION_TO_GROUP[base_pred]
-    teacher_group = ACTION_TO_GROUP[teacher_pred]
-    d2_group = ACTION_TO_GROUP[d2_pred]
-    adv_group = ACTION_TO_GROUP[adv_pred]
     return {
         "adv_pred": adv_pred,
         "teacher_pred": teacher_pred,
         "d2_pred": d2_pred,
         "base_pred": base_pred,
-        "base_group": base_group,
-        "teacher_group": teacher_group,
-        "d2_group": d2_group,
-        "adv_group": adv_group,
-        "base_teacher_pair": f"{base_pred}->{teacher_pred}",
-        "base_d2_pair": f"{base_pred}->{d2_pred}",
-        "base_adv_pair": f"{base_pred}->{adv_pred}",
-        "teacher_d2_pair": f"{teacher_pred}|{d2_pred}",
-        "base_teacher_group_pair": f"{base_group}->{teacher_group}",
-        "base_d2_group_pair": f"{base_group}->{d2_group}",
-        "base_adv_group_pair": f"{base_group}->{adv_group}",
-        "teacher_d2_agree": str(int(teacher_pred == d2_pred)),
-        "base_teacher_agree": str(int(base_pred == teacher_pred)),
-        "base_d2_agree": str(int(base_pred == d2_pred)),
-        "all_models_agree": str(int(base_pred == teacher_pred == d2_pred == adv_pred)),
+        "base_group": ACTION_TO_GROUP[base_pred],
+        "teacher_group": ACTION_TO_GROUP[teacher_pred],
         "last1": acts[-1] if acts else "none",
         "last2": ">".join(acts[-2:]) if acts else "none",
         "last_result": last_result(sample),
@@ -510,6 +493,9 @@ def main():
     folds = np.load(ROOT / "artifacts" / "distill_step2_strict" / "fold_ids.npy")
     adv, teacher, d2, blend, base_probs = load_arrays()
     cat_rows, numeric, base_pred = make_features(samples, adv, teacher, d2, blend, base_probs)
+    base_ordered = np.sort(base_probs, axis=1)
+    base_margin_values = base_ordered[:, -1] - base_ordered[:, -2]
+    base_entropy_values = np.array([entropy(row) for row in base_probs], dtype=np.float32)
 
     rows = []
     base_row = {
@@ -534,8 +520,6 @@ def main():
         ("sgd_0.00005", "all", THRESHOLDS_FINE),
         ("sgd_0.00007", "all", THRESHOLDS_FINE),
         ("sgd_0.0001", "all", THRESHOLDS_FINE),
-        ("sgdlong_0.00003", "all", THRESHOLDS_FINE),
-        ("sgdlong_0.00005", "all", THRESHOLDS_FINE),
         ("sgd_0.00003", "inspect", THRESHOLDS_FINE),
         ("sgd_0.0001", "inspect", THRESHOLDS_FINE),
         ("sgd_0.00003", "execute", THRESHOLDS_FINE),
@@ -559,6 +543,15 @@ def main():
                 "base_non_modify": ~np.isin(base_pred, MODIFY),
                 "same_group": same_group,
                 "same_group_non_modify": same_group & (~np.isin(base_pred, MODIFY)),
+                "base_margin_lte_005": base_margin_values <= 0.05,
+                "base_margin_lte_010": base_margin_values <= 0.10,
+                "base_margin_lte_020": base_margin_values <= 0.20,
+                "base_margin_lte_035": base_margin_values <= 0.35,
+                "base_entropy_gte_140": base_entropy_values >= 1.40,
+                "base_entropy_gte_180": base_entropy_values >= 1.80,
+                "base_entropy_gte_220": base_entropy_values >= 2.20,
+                "uncertain_non_modify": ((base_margin_values <= 0.20) | (base_entropy_values >= 1.80))
+                & (~np.isin(base_pred, MODIFY)),
             }
         elif scope_name == "inspect":
             scopes = {

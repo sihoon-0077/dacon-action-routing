@@ -1715,3 +1715,19 @@ Patch applied:
 - added categorical interactions among advanced, teacher, D2 student, and blended base predictions.
 - added prediction-pair and group-pair tokens such as `base_teacher_pair`, `base_d2_pair`, `base_teacher_group_pair`, and agreement flags.
 - added two long-convergence SGD probes: `sgdlong_0.00003` and `sgdlong_0.00005`.
+
+Heartbeat update:
+- timestamp: `2026-07-10 05:24 KST`
+- cycle: `6`, stage: `sleeping`.
+- interaction/long-convergence probe did not improve the global best. Latest cycle best was `sgdlong_0.00003_all_all_thr0.50`, strict Macro-F1 `0.740400`, delta `+0.016316`, below the prior best `0.740676`.
+- `+0.03` gate remains closed.
+
+New hypotheses:
+- H-AUTO-10: raw prediction-pair interactions overfit/noise the meta-router; revert to simpler state features.
+- H-AUTO-11: long-convergence SGD does not help enough and slows the loop, so the next cheap lever is not more epochs but better override scope.
+- H-AUTO-12: meta-router should focus on rows where the current base policy is uncertain, measured by base probability margin and entropy.
+
+Patch applied:
+- removed noisy prediction-pair interaction features from the meta-router feature set.
+- removed `sgdlong_*` from the active grid to recover loop speed.
+- added base uncertainty scopes: low margin (`<=0.05`, `<=0.10`, `<=0.20`, `<=0.35`), high entropy (`>=1.40`, `>=1.80`, `>=2.20`), and uncertain non-modify rows.
