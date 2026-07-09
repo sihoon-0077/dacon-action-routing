@@ -1699,3 +1699,19 @@ Patch applied:
 - added transition-level probes to `scripts/run_meta_router_autoresearch.py` for the two strongest all-class SGD variants: `alpha=3e-5` and `alpha=5e-5`.
 - each probe evaluates `base_action -> candidate_action` masks over thresholds `{0.35,0.42,0.45,0.48,0.50,0.55,0.65}` with a minimum support gate.
 - added a conservative greedy union of individually positive, fold-stable transition masks.
+
+Heartbeat update:
+- timestamp: `2026-07-10 04:54 KST`
+- cycle: `6`, stage: `running_inspect_autoresearch`.
+- transition-pair probe completed once and did not beat the existing best. The best remains `sgd_0.00003_all_all_thr0.45`, strict Macro-F1 `0.740676`, delta `+0.016592`.
+- `+0.03` gate remains closed.
+
+New hypotheses:
+- H-AUTO-7: the meta-router is limited by feature interactions between base/teacher/student predictions, not by threshold granularity.
+- H-AUTO-8: repeated SGD convergence warnings may leave a small amount of lift on the table; a small long-convergence probe is cheap enough to test.
+- H-AUTO-9: if interaction features and long SGD do not improve, the next useful work should shift from local OOF tuning to deployable policy simulation/submission packaging.
+
+Patch applied:
+- added categorical interactions among advanced, teacher, D2 student, and blended base predictions.
+- added prediction-pair and group-pair tokens such as `base_teacher_pair`, `base_d2_pair`, `base_teacher_group_pair`, and agreement flags.
+- added two long-convergence SGD probes: `sgdlong_0.00003` and `sgdlong_0.00005`.

@@ -222,13 +222,30 @@ def cat_features(sample, adv_pred, teacher_pred, d2_pred, base_pred):
     meta = sample.get("session_meta") or {}
     ws = meta.get("workspace") or {}
     acts = last_actions(sample, 4)
+    base_group = ACTION_TO_GROUP[base_pred]
+    teacher_group = ACTION_TO_GROUP[teacher_pred]
+    d2_group = ACTION_TO_GROUP[d2_pred]
+    adv_group = ACTION_TO_GROUP[adv_pred]
     return {
         "adv_pred": adv_pred,
         "teacher_pred": teacher_pred,
         "d2_pred": d2_pred,
         "base_pred": base_pred,
-        "base_group": ACTION_TO_GROUP[base_pred],
-        "teacher_group": ACTION_TO_GROUP[teacher_pred],
+        "base_group": base_group,
+        "teacher_group": teacher_group,
+        "d2_group": d2_group,
+        "adv_group": adv_group,
+        "base_teacher_pair": f"{base_pred}->{teacher_pred}",
+        "base_d2_pair": f"{base_pred}->{d2_pred}",
+        "base_adv_pair": f"{base_pred}->{adv_pred}",
+        "teacher_d2_pair": f"{teacher_pred}|{d2_pred}",
+        "base_teacher_group_pair": f"{base_group}->{teacher_group}",
+        "base_d2_group_pair": f"{base_group}->{d2_group}",
+        "base_adv_group_pair": f"{base_group}->{adv_group}",
+        "teacher_d2_agree": str(int(teacher_pred == d2_pred)),
+        "base_teacher_agree": str(int(base_pred == teacher_pred)),
+        "base_d2_agree": str(int(base_pred == d2_pred)),
+        "all_models_agree": str(int(base_pred == teacher_pred == d2_pred == adv_pred)),
         "last1": acts[-1] if acts else "none",
         "last2": ">".join(acts[-2:]) if acts else "none",
         "last_result": last_result(sample),
@@ -313,6 +330,19 @@ def pair_fixed(y, base, pred):
 
 
 def build_model(kind):
+    if kind.startswith("sgdlong"):
+        alpha = float(kind.rsplit("_", 1)[1])
+        return SGDClassifier(
+            loss="log_loss",
+            alpha=alpha,
+            penalty="elasticnet",
+            l1_ratio=0.05,
+            class_weight="balanced",
+            max_iter=220,
+            tol=5e-5,
+            random_state=42,
+            n_jobs=-1,
+        )
     if kind.startswith("sgd"):
         alpha = float(kind.rsplit("_", 1)[1])
         return SGDClassifier(
@@ -504,6 +534,8 @@ def main():
         ("sgd_0.00005", "all", THRESHOLDS_FINE),
         ("sgd_0.00007", "all", THRESHOLDS_FINE),
         ("sgd_0.0001", "all", THRESHOLDS_FINE),
+        ("sgdlong_0.00003", "all", THRESHOLDS_FINE),
+        ("sgdlong_0.00005", "all", THRESHOLDS_FINE),
         ("sgd_0.00003", "inspect", THRESHOLDS_FINE),
         ("sgd_0.0001", "inspect", THRESHOLDS_FINE),
         ("sgd_0.00003", "execute", THRESHOLDS_FINE),
