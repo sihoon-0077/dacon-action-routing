@@ -1783,3 +1783,21 @@ Patch applied:
 - added l2 alpha probes `sgdl2_0.00004`, `sgdl2_0.00006`, and `sgdl2_0.00008`.
 - removed active `sgdavg_*` probes from the grid.
 - added `sgdl2_0.00005` to transition pair probing alongside the two strongest elasticnet variants.
+
+Heartbeat update:
+- timestamp: `2026-07-10 08:52 KST`
+- cycle: `10`, stage: `sleeping`.
+- tighter l2 probe found another small strict OOF best: `sgdl2_0.00008_all_all_thr0.42`, Macro-F1 `0.740889`, delta `+0.016805`.
+- this improves the previous `sgdl2_0.00005_all_all_thr0.45` best by about `+0.000103`.
+- the best point moved toward a larger l2 alpha and lower threshold; execute F1 also rose to `0.740493`, while modify F1 gave back a little.
+- `+0.03` gate remains closed.
+
+New hypotheses:
+- H-AUTO-22: the local l2 peak is near `7e-5~1e-4`, not `5e-5`.
+- H-AUTO-23: the useful threshold region for l2 is concentrated around `0.38~0.44`; broad threshold sweeps are wasting loop time.
+- H-AUTO-24: the new best l2 candidate should participate in transition-pair probing, because it fixes more target inspect errors (`650`) than the previous l2 best (`506`).
+
+Patch applied:
+- added narrow l2 peak thresholds `[0.35, 0.38, 0.40, 0.42, 0.44, 0.45, 0.48]`.
+- added `sgdl2_0.00007`, `sgdl2_0.00009`, and `sgdl2_0.0001` only on that narrow threshold grid.
+- added `sgdl2_0.00008` to transition pair probing.
