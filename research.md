@@ -1430,3 +1430,30 @@ Runtime expectation:
 Decision:
 - Submit only if we are comfortable spending a higher-runtime public probe.
 - If this times out or regresses, keep `cand_v4_25k.zip`/`cand25_bias.zip` as safer lines and avoid 30k+ caps without candidate selection improvements.
+
+## cand25 Bias Diagnostic
+
+- timestamp: `2026-07-09`
+- question: whether the `cand25_bias.zip` score risk comes from class-order mismatch, double bias application, or OOF/test inference mismatch.
+
+Checks:
+- `cand_v4_25k.zip` has `temperature=1.0` and all-zero `bias_by_class`; it is a raw/no-bias v4 submit.
+- `cand_v4_25k.zip` does not include `model/decision_bias.json`.
+- `cand25_bias.zip` includes `model/decision_bias.json`, but `script.py` does not read that file. The active code reads only `model/v4_decision.json`, so the bias is not applied twice.
+- `script.py` `ALL_CLASSES`, `model/v4_main/model_config.json` `classes`, `model/v4_decision.json` `classes`, and `decision_bias.json` `class_order` are all identical.
+- G1 sanity using the exact zip decision rule on the 5-fold OOF logits reproduces the expected improvement:
+  - raw argmax Macro-F1: `0.7181928721`.
+  - zip decision Macro-F1: `0.7219901014`.
+  - changed rows: `2100 / 70000`.
+
+Important mismatch:
+- The submit model is not a 5-fold test ensemble. It is a single full-data model: `mdeberta384_v2_384_full_5e`, `fold=full_epoch_5`.
+- The bias was tuned on 5-fold OOF logits, while deployment uses a full-data single model plus base-router override logic.
+- The OOF sanity applies the classifier decision to all 70k rows, but the submit applies transformer decisions only to the top candidate cap (`25k` or `30k`) and then overrides base-router predictions.
+- `cand25_bias.zip` also opened `override_actions` to all 14 classes, whereas `cand_v4_25k.zip` only allowed inspect + modify + `respond_only` overrides. This is a likely source of over-aggressive corrections if public regresses.
+
+Decision:
+- Reject the double-application hypothesis.
+- Reject the class-order hypothesis.
+- Treat deployment mismatch as the current leading explanation.
+- If `cand25_bias.zip` underperforms, the next probe should either simulate the exact submit override policy on OOF or keep the old restricted `override_actions` while applying bias.
