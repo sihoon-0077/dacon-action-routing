@@ -1589,3 +1589,78 @@ Conclusion:
 - Even same-coarse-group override is too broad; it behaves closer to the failed direct/all-class style than to the safe restricted override.
 - Reject group-gate and keep the original restricted override set.
 - Wait for `cand30_len448.zip` result to decide whether context length, not gate width, is the next useful lever.
+
+## Leaderboard Gap Diagnosis
+
+- timestamp: `2026-07-10`
+- report: `reports/leaderboard_gap_diagnosis.md`
+- current public best: `cand30_router.zip`, Macro-F1 `0.7213901601`, runtime `8m 12s`.
+- leaderboard top shown by user: about `0.7979563`; current gap is about `+0.076566` Macro-F1.
+
+Trusted validation stack:
+
+| Model / validation | Macro-F1 | Accuracy | NLL |
+|---|---:|---:|---:|
+| strict advanced router OOF | `0.710559` | `0.711229` | `0.832679` |
+| mDeBERTa384 5-fold OOF | `0.718193` | `0.730329` | `0.689238` |
+| D2-M5 MLP strict OOF | `0.718463` | `0.721857` | `0.815825` |
+| D2-M5 + advanced blend OOF | `0.721237` | `0.721943` | `0.764653` |
+| strict distill final + bias | `0.724084` | `0.724629` | `0.767905` |
+
+Main diagnosis:
+- The deployable evidence is around `0.72~0.724`, which matches public `0.717~0.721`. Earlier `0.81~0.83` numbers were diagnostic/full-fit leakage or non-deployable feature mixtures, not a submit-ready model.
+- The main bottleneck is inspect routing. Strict final group Macro-F1: inspect `0.564897`, execute `0.721557`, communicate `0.736116`, modify `0.922817`.
+- Worst strict classes: `list_directory` `0.468507`, `read_file` `0.557494`, `grep_search` `0.597264`, `lint_or_typecheck` `0.605484`, `ask_user` `0.607564`, `glob_pattern` `0.636324`.
+- Top error pairs are inspect-heavy: `grep_search -> read_file` `2727`, `read_file -> list_directory` `1785`, `read_file -> grep_search` `1494`, `grep_search -> list_directory` `1387`, `list_directory -> read_file` `1099`.
+- Direct transformer, global/all-class bias, and same-coarse-group override are rejected by public evidence. `cand30_router.zip` improved because it increased coverage while keeping the base-router safety gate.
+
+Next high-value experiments:
+- Build an exact OOF simulator for the `cand30_router` decision policy, including candidate rank/cap and restricted override. Tune there before using public submits.
+- Build an inspect pairwise specialist for `read_file`, `grep_search`, `list_directory`, `glob_pattern`; adoption gate: inspect4 Macro-F1 `+0.02` with no half-split regression.
+- Train a meta-selector for "should transformer override base?" using base/teacher prob margins, predicted pair, last actions, result bucket, open profile, and candidate rank. Adoption gate: strict OOF `>=0.735`.
+- Stop spending submits on direct mode, all-class bias, same-group gate, and fold0-only larger encoders until a strict OOF gate opens.
+
+## Session Trajectory Lookup Mainline
+
+- timestamp: `2026-07-10`
+- trigger: user-provided analysis that train rows are strongly session-trajectory structured.
+- important finding: `cand30_router.zip` lineage already contained session lookup code, but `model/decision.json` had `disable_session_lookup: true`, so the lookup path was disabled in the current best public submit.
+
+New submit candidate:
+
+| Submit | Base | Change | Smoke |
+|---|---|---|---|
+| `cand30_traj_safe.zip` | `cand30_router.zip` | enable session lookup, add collision-safe normalized prompt lookup | pass |
+
+Implementation:
+- exact same-session `(session_id, current_prompt)` lookup is applied after the current base-router + restricted transformer override.
+- normalized lookup uses lowercasing, whitespace normalization, quote/code/path/number abstraction.
+- any exact or normalized key with conflicting actions is removed from the table and never hard-overrides.
+- lookup remains hard override because it reconstructs an already-observed session trajectory; if hidden test has no hits, score should stay close to `cand30_router.zip`.
+
+Smoke output on 5-row public-format sample:
+- `policy_v4_transformer: selected=5/5 changed=1 threshold=0.0 direct=False max_samples=30000`
+- `session_lookup_safe: sources=70005 exact_keys=63726 norm_keys=63726 pairs=242552 exact_collisions=3 norm_collisions=3 exact_hits=5/5 norm_hits=0/5 changed=1`
+
+Decision:
+- Submit `cand30_traj_safe.zip` as the next low-risk/high-upside public probe.
+- If it improves materially, trajectory reconstruction becomes stage 1 of the submit policy.
+- If it ties, hidden public likely does not expose enough same-session future-history replay, and the mainline returns to strict OOF policy-router/selector work.
+
+## Autoresearch Loop: Specialist / Meta-Router
+
+- timestamp: `2026-07-10`
+- runner: `scripts/run_autoresearch_loop.py`
+- status path: `reports/autoresearch_loop/status.md`
+- monitor automation: `monitor-dacon-autoresearch-loop`, every 30 minutes.
+- duration budget: `24h`.
+
+Initial results before loop:
+- `scripts/run_inspect_autoresearch.py`: best `pair_union_c1_thr0.85`, strict delta `+0.000009`; not enough to adopt.
+- interpretation: simple pair-flip classifiers do not recover the 5 largest inspect confusions. The next experiments must use trajectory features, meta-router selection, or submit-policy OOF simulation rather than direct hard flips.
+
+Loop plan:
+- run replay/trajectory audit.
+- rerun inspect pairwise autoresearch.
+- run `scripts/run_meta_router_autoresearch.py` using strict OOF advanced/router/student/teacher probabilities plus state features.
+- if any strict delta reaches `+0.03`, expand the same meta-router style to execute and communicate bottlenecks.
