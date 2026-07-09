@@ -1457,3 +1457,27 @@ Decision:
 - Reject the class-order hypothesis.
 - Treat deployment mismatch as the current leading explanation.
 - If `cand25_bias.zip` underperforms, the next probe should either simulate the exact submit override policy on OOF or keep the old restricted `override_actions` while applying bias.
+
+## cand25 Restricted Bias Probe
+
+- timestamp: `2026-07-09`
+- new submit: `cand25_restrict.zip`
+- source submit: `cand25_bias.zip`
+- purpose: test whether the all-class override in `cand25_bias.zip` was too aggressive.
+- change from `cand25_bias.zip`: keep the same temperature+bias values, but restore the original `cand_v4_25k.zip` override action set.
+
+Config:
+- temperature: `1.0010827404120315`.
+- max_transformer_samples: `25000`.
+- max_len: `384`.
+- batch_size: `64`.
+- override_actions: `read_file`, `grep_search`, `list_directory`, `glob_pattern`, `edit_file`, `write_file`, `apply_patch`, `respond_only`.
+- zip size: about `546.702 MB`.
+
+Smoke:
+- local CPU smoke on 5-row sample: pass.
+- output: `policy_v4_transformer: selected=5/5 changed=1 threshold=0.0 direct=False max_samples=25000`.
+
+Interpretation:
+- If this beats `cand25_bias.zip`, the all-class override was the damaging part.
+- If this also underperforms `cand_v4_25k.zip`, the OOF-tuned bias itself is mismatched to the full-data submit model/candidate pipeline.
