@@ -42,6 +42,8 @@ ACTION_TO_GROUP = {a: g for g, arr in GROUPS.items() for a in arr}
 
 THRESHOLDS_COARSE = [0.0, 0.35, 0.45, 0.55, 0.65, 0.75, 0.85]
 THRESHOLDS_FINE = [0.0, 0.30, 0.35, 0.40, 0.42, 0.45, 0.48, 0.50, 0.55, 0.60, 0.65, 0.75, 0.85]
+THRESHOLDS_PAIR = [0.35, 0.42, 0.45, 0.48, 0.50, 0.55, 0.65]
+PAIRWISE_PROBE_KINDS = {"sgd_0.00003", "sgd_0.00005"}
 
 TARGET_PAIRS = [
     ("grep_search", "read_file"),
@@ -393,6 +395,83 @@ def evaluate_variant(name, y, base_pred, candidate_pred, candidate_conf, folds, 
     return rows
 
 
+def evaluate_transition_probes(name, y, base_pred, candidate_pred, candidate_conf, folds, thresholds, min_count=120):
+    rows = []
+    base_score = macro(y, base_pred)
+    base_min_fold = min(fold_values(y, base_pred, folds))
+    candidates = []
+    for base_action in ACTIONS:
+        base_mask = base_pred == base_action
+        if int(base_mask.sum()) < min_count:
+            continue
+        for cand_action in ACTIONS:
+            if cand_action == base_action:
+                continue
+            pair_mask_base = base_mask & (candidate_pred == cand_action)
+            if int(pair_mask_base.sum()) < min_count:
+                continue
+            for thr in thresholds:
+                mask = pair_mask_base & (candidate_conf >= thr)
+                changed = int(mask.sum())
+                if changed < min_count:
+                    continue
+                pred = base_pred.copy()
+                pred[mask] = cand_action
+                score = macro(y, pred)
+                fvals = fold_values(y, pred, folds)
+                row = {
+                    "name": f"{name}_pair_{base_action}_to_{cand_action}_thr{thr:.2f}",
+                    "macro_f1": score,
+                    "delta": score - base_score,
+                    "inspect_f1": group_macro(y, pred, "inspect"),
+                    "inspect_delta": group_macro(y, pred, "inspect") - group_macro(y, base_pred, "inspect"),
+                    "execute_f1": group_macro(y, pred, "execute"),
+                    "communicate_f1": group_macro(y, pred, "communicate"),
+                    "modify_f1": group_macro(y, pred, "modify"),
+                    "changed": changed,
+                    "fixed_target_errors": pair_fixed(y, base_pred, pred),
+                    "min_fold_delta": min(fvals) - base_min_fold,
+                    "folds": ";".join(f"{v:.6f}" for v in fvals),
+                }
+                rows.append(row)
+                if row["delta"] > 0 and row["min_fold_delta"] >= -0.0005:
+                    candidates.append((row["delta"], mask.copy(), cand_action, row["name"]))
+
+    current = base_pred.copy()
+    selected = []
+    for _, mask, cand_action, label in sorted(candidates, key=lambda x: x[0], reverse=True):
+        trial = current.copy()
+        trial[mask] = cand_action
+        trial_score = macro(y, trial)
+        current_score = macro(y, current)
+        trial_min_fold = min(fold_values(y, trial, folds))
+        if trial_score > current_score + 1e-6 and trial_min_fold >= base_min_fold - 0.0005:
+            current = trial
+            selected.append(label)
+        if len(selected) >= 20:
+            break
+
+    if selected:
+        fvals = fold_values(y, current, folds)
+        rows.append(
+            {
+                "name": f"{name}_pair_greedy_top{len(selected)}",
+                "macro_f1": macro(y, current),
+                "delta": macro(y, current) - base_score,
+                "inspect_f1": group_macro(y, current, "inspect"),
+                "inspect_delta": group_macro(y, current, "inspect") - group_macro(y, base_pred, "inspect"),
+                "execute_f1": group_macro(y, current, "execute"),
+                "communicate_f1": group_macro(y, current, "communicate"),
+                "modify_f1": group_macro(y, current, "modify"),
+                "changed": int((current != base_pred).sum()),
+                "fixed_target_errors": pair_fixed(y, base_pred, current),
+                "min_fold_delta": min(fvals) - base_min_fold,
+                "folds": ";".join(f"{v:.6f}" for v in fvals),
+            }
+        )
+    return rows
+
+
 def main():
     OUT.mkdir(parents=True, exist_ok=True)
     samples = read_jsonl(ROOT / "data" / "train.jsonl")
@@ -483,6 +562,18 @@ def main():
                     folds,
                     scope,
                     thresholds=thresholds,
+                )
+            )
+        if scope_name == "all" and kind in PAIRWISE_PROBE_KINDS:
+            rows.extend(
+                evaluate_transition_probes(
+                    f"{kind}_{scope_name}",
+                    y,
+                    base_pred,
+                    cand_pred,
+                    cand_conf,
+                    folds,
+                    thresholds=THRESHOLDS_PAIR,
                 )
             )
 

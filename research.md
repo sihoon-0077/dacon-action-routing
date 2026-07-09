@@ -1682,3 +1682,20 @@ Patch applied:
 - added fine thresholds around the current winner: `0.40`, `0.42`, `0.45`, `0.48`, `0.50`.
 - added base-execute, base-communicate, same-group, and same-group-non-modify evaluation scopes.
 - added execute-only and communicate-only SGD meta-router probes.
+
+Heartbeat update:
+- timestamp: `2026-07-10 03:54 KST`
+- cycle: `4`, stage: `running_meta_router_autoresearch`.
+- expanded grid completed once; best did not improve beyond `sgd_0.00003_all_all_thr0.45`, strict Macro-F1 `0.740676`, delta `+0.016592`.
+- nearest variants (`thr=0.48`, `thr=0.50`, `alpha=5e-5`) cluster around `+0.0160~+0.0165`, so global alpha/threshold tuning appears locally saturated.
+- `+0.03` gate remains closed.
+
+New hypotheses:
+- H-AUTO-4: a single global threshold is too crude; some base→candidate transitions are beneficial while others are damaging.
+- H-AUTO-5: same-group filtering keeps most of the lift but does not unlock new lift, so the next unit of control should be action-pair transitions rather than coarse groups.
+- H-AUTO-6: if pairwise transition greedy-union cannot beat `+0.0166`, the remaining gap likely requires a deployable submit-policy OOF simulator or a richer specialist feature source, not more threshold sweeps.
+
+Patch applied:
+- added transition-level probes to `scripts/run_meta_router_autoresearch.py` for the two strongest all-class SGD variants: `alpha=3e-5` and `alpha=5e-5`.
+- each probe evaluates `base_action -> candidate_action` masks over thresholds `{0.35,0.42,0.45,0.48,0.50,0.55,0.65}` with a minimum support gate.
+- added a conservative greedy union of individually positive, fold-stable transition masks.
