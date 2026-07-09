@@ -1376,3 +1376,35 @@ Decision:
 - Treat `cand_v4_25k.zip` as the current primary submit candidate.
 - Keep `cand_distill.zip` as the safe fast fallback.
 - Future public submissions should beat `0.719125` locally by a clear margin or target a specific failure mode; small fold0-only backbone gains are not enough.
+
+## cand25 Bias Candidate
+
+- timestamp: `2026-07-09`
+- source submit: `cand_v4_25k.zip`
+- new submit: `cand25_bias.zip`
+- source public Macro-F1: `0.7191250861`
+- goal: apply the validated temperature+bias decision rule from `decision_bias.json` on top of the current best v4 25k transformer candidate.
+
+Applied decision rule:
+- temperature: `1.0010827404120315`
+- formula: `argmax(log_softmax(logits / temperature) + bias_by_class)`
+- class order verified against the submit model class order.
+- `override_actions` opened to all 14 classes so positive recall biases for `web_search`, `lint_or_typecheck`, `ask_user`, and `plan_task` can actually affect final predictions.
+- kept the proven runtime settings: `max_len=384`, `batch_size=64`, `max_transformer_samples=25000`.
+
+OOF sanity:
+- mDeBERTa 5-fold OOF shape: `(70000, 14)`.
+- before bias Macro-F1: `0.7181928721`.
+- after bias Macro-F1: `0.7219901014`.
+- changed OOF rows: `2100 / 70000`.
+
+Packaging:
+- zip: `cand25_bias.zip`.
+- zip size: about `546.702 MB`.
+- zip structure: `model/`, `script.py`, `requirements.txt`.
+- local CPU smoke on the 5-row sample: pass.
+- smoke output: `policy_v4_transformer: selected=5/5 changed=2 threshold=0.0 direct=False max_samples=25000`.
+
+Decision:
+- Submit as the next public probe against the current `0.719125` defense line.
+- If public score falls below `cand_v4_25k.zip`, rollback the all-class override and test a conservative bias-only variant that keeps the old restricted override action set.
