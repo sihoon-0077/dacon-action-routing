@@ -40,6 +40,9 @@ MODIFY = ["edit_file", "write_file", "apply_patch"]
 GROUPS = {"inspect": INSPECT, "execute": EXECUTE, "communicate": COMMUNICATE, "modify": MODIFY}
 ACTION_TO_GROUP = {a: g for g, arr in GROUPS.items() for a in arr}
 
+THRESHOLDS_COARSE = [0.0, 0.35, 0.45, 0.55, 0.65, 0.75, 0.85]
+THRESHOLDS_FINE = [0.0, 0.30, 0.35, 0.40, 0.42, 0.45, 0.48, 0.50, 0.55, 0.60, 0.65, 0.75, 0.85]
+
 TARGET_PAIRS = [
     ("grep_search", "read_file"),
     ("read_file", "list_directory"),
@@ -342,6 +345,10 @@ def predict_oof(kind, cat_rows, numeric, y, folds, scope_name):
         val = folds == fold
         if scope_name == "inspect":
             train &= np.isin(y, INSPECT)
+        elif scope_name == "execute":
+            train &= np.isin(y, EXECUTE)
+        elif scope_name == "communicate":
+            train &= np.isin(y, COMMUNICATE)
         elif scope_name == "all_non_modify":
             train &= ~np.isin(y, MODIFY)
         vec = DictVectorizer(sparse=True)
@@ -413,27 +420,51 @@ def main():
     rows.append(base_row)
 
     specs = [
-        ("sgd_0.00003", "all"),
-        ("sgd_0.0001", "all"),
-        ("sgd_0.00003", "inspect"),
-        ("sgd_0.0001", "inspect"),
-        ("et_4", "inspect"),
-        ("et_8", "inspect"),
-        ("et_8", "all_non_modify"),
+        ("sgd_0.00002", "all", THRESHOLDS_FINE),
+        ("sgd_0.00003", "all", THRESHOLDS_FINE),
+        ("sgd_0.00005", "all", THRESHOLDS_FINE),
+        ("sgd_0.00007", "all", THRESHOLDS_FINE),
+        ("sgd_0.0001", "all", THRESHOLDS_FINE),
+        ("sgd_0.00003", "inspect", THRESHOLDS_FINE),
+        ("sgd_0.0001", "inspect", THRESHOLDS_FINE),
+        ("sgd_0.00003", "execute", THRESHOLDS_FINE),
+        ("sgd_0.0001", "execute", THRESHOLDS_FINE),
+        ("sgd_0.00003", "communicate", THRESHOLDS_FINE),
+        ("sgd_0.0001", "communicate", THRESHOLDS_FINE),
+        ("et_4", "inspect", THRESHOLDS_COARSE),
+        ("et_8", "inspect", THRESHOLDS_COARSE),
+        ("et_8", "all_non_modify", THRESHOLDS_COARSE),
     ]
-    for kind, scope_name in specs:
+    for kind, scope_name, thresholds in specs:
         print(f"running {kind} scope={scope_name}", flush=True)
         cand_pred, cand_conf = predict_oof(kind, cat_rows, numeric, y, folds, scope_name)
         if scope_name == "all":
+            same_group = np.array([ACTION_TO_GROUP.get(a) == ACTION_TO_GROUP.get(b) for a, b in zip(base_pred, cand_pred)])
             scopes = {
                 "all": np.ones(len(y), dtype=bool),
                 "base_inspect": np.isin(base_pred, INSPECT),
+                "base_execute": np.isin(base_pred, EXECUTE),
+                "base_communicate": np.isin(base_pred, COMMUNICATE),
                 "base_non_modify": ~np.isin(base_pred, MODIFY),
+                "same_group": same_group,
+                "same_group_non_modify": same_group & (~np.isin(base_pred, MODIFY)),
             }
         elif scope_name == "inspect":
             scopes = {
                 "base_inspect": np.isin(base_pred, INSPECT),
                 "inspect_to_inspect": np.isin(base_pred, INSPECT) & np.isin(cand_pred, INSPECT),
+            }
+        elif scope_name == "execute":
+            scopes = {
+                "base_execute": np.isin(base_pred, EXECUTE),
+                "execute_to_execute": np.isin(base_pred, EXECUTE) & np.isin(cand_pred, EXECUTE),
+                "same_group": np.array([ACTION_TO_GROUP.get(a) == ACTION_TO_GROUP.get(b) for a, b in zip(base_pred, cand_pred)]),
+            }
+        elif scope_name == "communicate":
+            scopes = {
+                "base_communicate": np.isin(base_pred, COMMUNICATE),
+                "communicate_to_communicate": np.isin(base_pred, COMMUNICATE) & np.isin(cand_pred, COMMUNICATE),
+                "same_group": np.array([ACTION_TO_GROUP.get(a) == ACTION_TO_GROUP.get(b) for a, b in zip(base_pred, cand_pred)]),
             }
         else:
             scopes = {
@@ -451,7 +482,7 @@ def main():
                     cand_conf,
                     folds,
                     scope,
-                    thresholds=[0.0, 0.35, 0.45, 0.55, 0.65, 0.75, 0.85],
+                    thresholds=thresholds,
                 )
             )
 

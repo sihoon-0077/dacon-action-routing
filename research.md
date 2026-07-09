@@ -1664,3 +1664,21 @@ Loop plan:
 - rerun inspect pairwise autoresearch.
 - run `scripts/run_meta_router_autoresearch.py` using strict OOF advanced/router/student/teacher probabilities plus state features.
 - if any strict delta reaches `+0.03`, expand the same meta-router style to execute and communicate bottlenecks.
+
+Heartbeat update:
+- timestamp: `2026-07-10 02:55 KST`
+- current gate: `+0.03` not opened yet.
+- replay audit confirms transductive same-session replay is strong on train-format data, but GroupSplit train-to-valid coverage is zero for session-scoped lookup; public impact must be validated by submit probe.
+- inspect pair-flip loop remains rejected: best strict delta only `+0.000009`.
+- meta-router loop is the first meaningful new signal: best `sgd_0.00003_all_all_thr0.45`, strict Macro-F1 `0.740676`, delta `+0.016592`, inspect delta `+0.007223`, changed `4598`, fixed target inspect errors `600`.
+
+New hypotheses for the next cheap loop:
+- H-AUTO-1: the best meta-router is near `alpha=3e-5`, `thr=0.45`; a finer alpha/threshold grid may recover additional stable lift.
+- H-AUTO-2: broad all-class meta-routing helps, but group-preserving and non-modify scopes may keep the lift while reducing public-distribution overreach.
+- H-AUTO-3: execute and communicate have smaller but still material confusion, so group-specific SGD meta-routers should be probed before any new GPU model.
+
+Patch applied:
+- expanded `scripts/run_meta_router_autoresearch.py` with `alpha={2e-5,3e-5,5e-5,7e-5,1e-4}` for all-class SGD.
+- added fine thresholds around the current winner: `0.40`, `0.42`, `0.45`, `0.48`, `0.50`.
+- added base-execute, base-communicate, same-group, and same-group-non-modify evaluation scopes.
+- added execute-only and communicate-only SGD meta-router probes.
