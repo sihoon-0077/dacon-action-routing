@@ -1312,3 +1312,36 @@ Decision:
 - Undertraining is confirmed on fold0.
 - Epoch extension is now a real candidate, unlike micro-rules and hard overrides.
 - Important implementation issue: `train_fold.py` saved the checkpoint by minimum NLL, so the saved checkpoint is epoch5 even though Macro-F1 peaks at epoch7. Patch checkpoint saving before using this path for a submit candidate.
+
+## Granite EP2 Public Submit Result
+
+- timestamp: `2026-07-09`
+- submit: `granite_ep2.zip`
+- public submission id: `30338`
+- public Macro-F1: `0.7093429258`
+- server runtime: `4m 33s`
+- local source run: `granite311_v2_384_3e_gate`
+- local fold0 best epoch: `2`
+- local fold0 Macro-F1: `0.7267799199659711`
+- local fold0 NLL: `0.6799960617048597`
+- local fold0 accuracy: `0.7409699237300331`
+
+Comparison:
+
+| Candidate | Public Macro-F1 | Runtime | Note |
+|---|---:|---:|---|
+| `cand_distill.zip` | `0.7174979343` | `2m 58s` | current public defense |
+| `v4ep5_384_20k.zip` | `0.7127296320` | `6m 05s` | mDeBERTa full ep5, 20k candidates |
+| `v4ep3_384_20k.zip` | `0.7101909354` | `6m 08s` | mDeBERTa full ep3, 20k candidates |
+| `granite_ep2.zip` | `0.7093429258` | `4m 33s` | Granite fold0 checkpoint |
+
+Interpretation:
+- Granite-311M improved the fold0 gate slightly over the previous mDeBERTa fold0 reference, but the gain did not transfer to public.
+- The gap from local fold0 to public is about `-0.017437`, so fold0 single-checkpoint validation is not reliable enough for model-family adoption.
+- It also trails `cand_distill.zip` by about `-0.008155` and trails the mDeBERTa ep5 20k public submit by about `-0.003387`.
+- Runtime is acceptable, and packaging worked, but the score says model size/backbone swap alone is not the current bottleneck.
+
+Decision:
+- Reject `granite_ep2.zip` as a primary submit candidate.
+- Keep the result as evidence that larger encoder experiments must use either 5-fold OOF or full-data training before public submission.
+- Do not spend another public submit on Granite fold0 variants unless OOF/full-data evidence clears the current `0.7175` public defense line.
