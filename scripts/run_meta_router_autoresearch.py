@@ -43,7 +43,7 @@ ACTION_TO_GROUP = {a: g for g, arr in GROUPS.items() for a in arr}
 THRESHOLDS_COARSE = [0.0, 0.35, 0.45, 0.55, 0.65, 0.75, 0.85]
 THRESHOLDS_FINE = [0.0, 0.30, 0.35, 0.40, 0.42, 0.45, 0.48, 0.50, 0.55, 0.60, 0.65, 0.75, 0.85]
 THRESHOLDS_PAIR = [0.35, 0.42, 0.45, 0.48, 0.50, 0.55, 0.65]
-PAIRWISE_PROBE_KINDS = {"sgd_0.00003", "sgd_0.00005"}
+PAIRWISE_PROBE_KINDS = {"sgd_0.00003", "sgd_0.00005", "sgdl2_0.00005"}
 
 TARGET_PAIRS = [
     ("grep_search", "read_file"),
@@ -547,9 +547,10 @@ def main():
         ("sgd_0.00007", "all", THRESHOLDS_FINE),
         ("sgd_0.0001", "all", THRESHOLDS_FINE),
         ("sgdl2_0.00003", "all", THRESHOLDS_FINE),
+        ("sgdl2_0.00004", "all", THRESHOLDS_FINE),
         ("sgdl2_0.00005", "all", THRESHOLDS_FINE),
-        ("sgdavg_0.00003", "all", THRESHOLDS_FINE),
-        ("sgdavg_0.00005", "all", THRESHOLDS_FINE),
+        ("sgdl2_0.00006", "all", THRESHOLDS_FINE),
+        ("sgdl2_0.00008", "all", THRESHOLDS_FINE),
         ("sgd_0.00003", "inspect", THRESHOLDS_FINE),
         ("sgd_0.0001", "inspect", THRESHOLDS_FINE),
         ("sgd_0.00003", "execute", THRESHOLDS_FINE),

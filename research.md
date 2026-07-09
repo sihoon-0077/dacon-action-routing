@@ -1765,3 +1765,21 @@ Patch applied:
 - added `sgdl2_0.00003` and `sgdl2_0.00005` all-class probes.
 - added `sgdavg_0.00003` and `sgdavg_0.00005` all-class probes.
 - these reuse the existing threshold/scope grid and should be cheaper than the rejected `sgdlong_*` probes.
+
+Heartbeat update:
+- timestamp: `2026-07-10 07:54 KST`
+- cycle: `9`, stage: `sleeping`.
+- l2-only SGD produced a small new strict OOF best: `sgdl2_0.00005_all_all_thr0.45`, Macro-F1 `0.740785`, delta `+0.016701`.
+- this beats the prior best `sgd_0.00003_all_all_thr0.45` by about `+0.000109`; useful signal, but still far below the `+0.03` expansion gate.
+- inspect-only search remains exhausted at delta `+0.000009`; the lift is coming from global meta-routing, not direct inspect hard rules.
+- `+0.03` gate remains closed.
+
+New hypotheses:
+- H-AUTO-19: l2 regularization preserves weak state/policy signals slightly better than elasticnet, so alpha values around `5e-5` deserve a tighter sweep.
+- H-AUTO-20: averaged SGD did not reach the top cluster and should be removed from the loop to keep the 24h runner focused.
+- H-AUTO-21: since `sgdl2_0.00005` is now the best global candidate, its transition-pair probes may reveal a stable subset of inspect corrections that the elasticnet variants missed.
+
+Patch applied:
+- added l2 alpha probes `sgdl2_0.00004`, `sgdl2_0.00006`, and `sgdl2_0.00008`.
+- removed active `sgdavg_*` probes from the grid.
+- added `sgdl2_0.00005` to transition pair probing alongside the two strongest elasticnet variants.
