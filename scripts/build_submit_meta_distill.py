@@ -220,6 +220,16 @@ def meta_make_features(samples, adv_probs, d2_probs, blend_probs, base_probs):
     return cat_rows, np.asarray(numeric, dtype=np.float32), np.array([ALL_CLASSES[i] for i in base_pred], dtype=object)
 
 
+def meta_scope_mask(name, base_probs):
+    if name == "base_margin_lte_020":
+        return np.asarray([meta_margin(row) <= 0.20 for row in base_probs], dtype=bool)
+    if name == "base_margin_lte_022":
+        return np.asarray([meta_margin(row) <= 0.22 for row in base_probs], dtype=bool)
+    if name == "base_margin_lte_018":
+        return np.asarray([meta_margin(row) <= 0.18 for row in base_probs], dtype=bool)
+    return np.ones(base_probs.shape[0], dtype=bool)
+
+
 def apply_meta_router(samples, base_preds, context, model_dir):
     meta_path = model_dir / "meta_router.pkl"
     if not meta_path.exists():
@@ -240,16 +250,17 @@ def apply_meta_router(samples, base_preds, context, model_dir):
     cand = classes[top]
     conf = proba[np.arange(len(top)), top]
     threshold = float(payload.get("threshold", 0.42))
+    scope = meta_scope_mask(str(payload.get("scope", "all")), context["base_probs"])
     out = list(base_preds)
     changed = 0
     applied = 0
     for i, (action, score) in enumerate(zip(cand, conf)):
-        if float(score) >= threshold:
+        if bool(scope[i]) and float(score) >= threshold:
             applied += 1
             if out[i] != str(action):
                 changed += 1
             out[i] = str(action)
-    print(f"meta_router_sgdl2: applied={applied}/{len(samples)} changed={changed} threshold={threshold}")
+    print(f"meta_router_sgdl2: applied={applied}/{len(samples)} changed={changed} threshold={threshold} scope={payload.get('scope', 'all')}")
     return out
 '''
 
@@ -261,9 +272,24 @@ def train_meta_router(out_dir):
     adv = np.load(ROOT / "artifacts" / "advanced_oof_strict" / "advanced_oof_probs.npy").astype(np.float32)
     d2 = np.load(ROOT / "reports" / "distill_step2_strict" / "mlp_oof" / "D2-M5" / "oof_probs.npy").astype(np.float32)
     cfg = read_json(ROOT / "reports" / "distill_step2_strict" / "blends" / "best_config.json")
-    blend = 0.5 * adv + 0.5 * d2
     bias = np.array([float(cfg["bias"]["bias_by_class"].get(a, 0.0)) for a in ACTIONS], dtype=np.float32)
-    base_probs = softmax(np.log(np.clip(blend, 1e-12, 1.0)) + bias[None, :], axis=1).astype(np.float32)
+    prob_cfg_path = ROOT / "reports" / "prob_blend_autoresearch" / "best_config.json"
+    if prob_cfg_path.exists():
+        prob_cfg = read_json(prob_cfg_path)
+        w_adv = float(prob_cfg.get("w_adv", 0.44) or 0.44)
+        # The OOF research blend can use a separate teacher probability table.
+        # Submit cannot ship that teacher, so teacher weight is folded into the
+        # deployable D2 student proxy.
+        w_d2 = float(prob_cfg.get("w_teacher", 0.48) or 0.48) + float(prob_cfg.get("w_d2", 0.08) or 0.08)
+        bias_scale = float(prob_cfg.get("bias_scale", 1.25) or 1.25)
+    else:
+        w_adv, w_d2, bias_scale = 0.44, 0.56, 1.25
+    raw_scores = (
+        w_adv * np.log(np.clip(adv, 1e-12, 1.0))
+        + w_d2 * np.log(np.clip(d2, 1e-12, 1.0))
+    )
+    blend = softmax(raw_scores, axis=1).astype(np.float32)
+    base_probs = softmax(raw_scores + bias_scale * bias[None, :], axis=1).astype(np.float32)
 
     cat_rows = []
     numeric = []
@@ -309,14 +335,16 @@ def train_meta_router(out_dir):
     payload = {
         "name": "sgdl2_0.00008_all_all_thr0.42_deployable_distill_proxy",
         "threshold": 0.42,
+        "scope": "base_margin_lte_020",
         "class_order": ACTIONS,
         "vectorizer": vec,
         "model": model,
-        "feature_note": "teacher features replaced by D2 student probabilities for deployable inference",
+        "feature_note": "teacher features replaced by D2 student probabilities for deployable inference; applies only when base margin <= 0.20",
+        "deploy_blend": {"w_adv": w_adv, "w_d2": w_d2, "bias_scale": bias_scale},
         "oof_reference": {
-            "strict_best_name": "sgdl2_0.00008_all_all_thr0.42",
-            "strict_macro_f1": 0.740888540377758,
-            "strict_delta": 0.016804625157673225,
+            "strict_best_name": "sgdl2_0.00008_all_base_margin_lte_020_thr0.42",
+            "strict_macro_f1": 0.7451695146266804,
+            "strict_delta": 0.0021176850582127482,
         },
     }
     joblib.dump(payload, out_dir / "model" / "meta_router.pkl", compress=3)
@@ -327,14 +355,24 @@ def build_script_text():
     script = script.replace("import router_base", "import router_base\nimport re")
     script = script.replace(
         "return [ALL_CLASSES[int(i)] for i in scores.argmax(axis=1)]",
-        "\n    base_probs = softmax_np(scores, axis=1).astype(np.float32)\n"
+        "\n    deploy_w_adv = float(config.get(\"deploy_w_adv\", 0.44))\n"
+        "    deploy_w_student = float(config.get(\"deploy_w_student\", 0.56))\n"
+        "    deploy_bias_scale = float(config.get(\"deploy_bias_scale\", 1.25))\n"
+        "    deploy_raw_scores = (\n"
+        "        deploy_w_adv * np.log(np.clip(adv_probs, 1e-12, 1.0))\n"
+        "        + deploy_w_student * np.log(np.clip(student_probs, 1e-12, 1.0))\n"
+        "    )\n"
+        "    deploy_blend = softmax_np(deploy_raw_scores, axis=1).astype(np.float32)\n"
+        "    deploy_scores = deploy_raw_scores + deploy_bias_scale * bias[None, :]\n"
+        "    base_probs = softmax_np(deploy_scores, axis=1).astype(np.float32)\n"
         "    preds = [ALL_CLASSES[int(i)] for i in scores.argmax(axis=1)]\n"
         "    context = {\n"
         "        \"adv_probs\": adv_probs.astype(np.float32),\n"
         "        \"student_probs\": student_probs.astype(np.float32),\n"
-        "        \"blend_probs\": probs.astype(np.float32),\n"
+        "        \"blend_probs\": deploy_blend.astype(np.float32),\n"
         "        \"base_probs\": base_probs,\n"
         "    }\n"
+        "    preds = [ALL_CLASSES[int(i)] for i in deploy_scores.argmax(axis=1)]\n"
         "    return preds, context",
     )
     script = script.replace(
@@ -379,6 +417,19 @@ def main():
         "vectorizer.pkl",
     ]:
         shutil.copy2(student_dir / name, out_dir / "model" / name)
+    cfg_path = out_dir / "model" / "config.json"
+    cfg = json.loads(cfg_path.read_text(encoding="utf-8"))
+    prob_cfg_path = ROOT / "reports" / "prob_blend_autoresearch" / "best_config.json"
+    if prob_cfg_path.exists():
+        prob_cfg = read_json(prob_cfg_path)
+        cfg["deploy_w_adv"] = float(prob_cfg.get("w_adv", 0.44) or 0.44)
+        cfg["deploy_w_student"] = float(prob_cfg.get("w_teacher", 0.48) or 0.48) + float(prob_cfg.get("w_d2", 0.08) or 0.08)
+        cfg["deploy_bias_scale"] = float(prob_cfg.get("bias_scale", 1.25) or 1.25)
+    else:
+        cfg["deploy_w_adv"] = 0.44
+        cfg["deploy_w_student"] = 0.56
+        cfg["deploy_bias_scale"] = 1.25
+    cfg_path.write_text(json.dumps(cfg, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
     train_meta_router(out_dir)
     size = zip_dir(out_dir, args.zip_path)
     unpacked = sum(path.stat().st_size for path in out_dir.rglob("*") if path.is_file())
