@@ -1953,3 +1953,15 @@ New hypotheses:
 - H-AUTO-46: the refined blend needs a slightly stronger correction model (`sgdl2_0.00008`) than the earlier coarse blend (`0.000065`).
 - H-AUTO-47: the stable operating region is still around `base_margin_lte_020`, so confidence-margin gating is the most useful cheap mask found so far.
 - H-AUTO-48: because inspect delta finally turned positive, the next practical step is packaging this exact policy or testing a very small local threshold sweep around `thr0.41-0.43`, not adding a broad new specialist.
+
+Submit audit:
+- submitted file: `meta0745.zip`
+- public Macro-F1: `0.704342388`
+- runtime: `4m 43s`
+- diagnosis: score exactly matches the old advanced-only line, so this was not a real model-quality regression.
+- root cause: `meta_prompt_file_rel` mutated `prompt_names` while iterating over it. File-path prompts in hidden data triggered `RuntimeError: Set changed size during iteration`, the broad try/except caught it, and the script fell back to `advanced_router`.
+- local reproduction: running `meta0745` on the first 30k train rows fails at `apply_meta_router` with the same runtime error.
+- fix: use `list(prompt_names)` when adding basename variants.
+- fixed package: `meta0745f.zip`, size `420.31 MB`.
+- validation: py_compile pass, 5-row smoke pass, first-30k stress pass with `applied=1999/30000`, `base_vs_meta_changed=568`, `adv_vs_meta_changed=2876`.
+- next submit decision: use `meta0745f.zip` if spending another public probe on the deployable meta-router path.

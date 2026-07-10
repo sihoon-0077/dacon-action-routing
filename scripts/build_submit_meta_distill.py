@@ -143,7 +143,7 @@ def meta_prompt_file_rel(sample):
         open_names.add(p)
         open_names.add(p.rsplit("/", 1)[-1])
     prompt_names = {p.replace("\\", "/").lower() for p in prompt_files}
-    prompt_names.update(x.rsplit("/", 1)[-1] for x in prompt_names)
+    prompt_names.update(x.rsplit("/", 1)[-1] for x in list(prompt_names))
     return "open" if (prompt_names & open_names) else "not_open"
 
 
