@@ -1849,3 +1849,20 @@ New hypotheses:
 Patch applied:
 - added cheap `all_non_modify` probes for `sgdl2_0.00006`, `sgdl2_0.00008`, and `sgd_0.00003`.
 - these train the meta-router only on non-modify labels and evaluate conservative `base_non_modify` / `same_group_non_modify` override scopes.
+
+Heartbeat update:
+- timestamp: `2026-07-10 13:25 KST`
+- cycle: `16`, stage: `sleeping`.
+- non-modify-only router completed in `1057.9s` and did not improve the global best.
+- current strict OOF best remains `sgdl2_0.00008_all_all_thr0.42`, Macro-F1 `0.740889`, delta `+0.016805`.
+- best non-modify-focused rows stayed around Macro-F1 `0.7319`, so training only on non-modify labels throws away too much shared signal.
+- `+0.03` gate remains closed.
+
+New hypotheses:
+- H-AUTO-31: non-modify labels still benefit from the full 14-class probability geometry; restricting the training labels to non-modify underfits the boundary.
+- H-AUTO-32: the safe way to reduce harmful overrides is not a new non-modify model, but a gate requiring agreement with an auxiliary predictor.
+- H-AUTO-33: teacher/D2/advanced agreement may identify high-precision correction subsets without paying extra training cost.
+
+Patch applied:
+- added agreement scopes for all-class candidates: `cand_eq_teacher_non_modify`, `cand_eq_d2_non_modify`, `cand_eq_teacher_d2_non_modify`, `cand_eq_any_aux_non_modify`, and `same_group_aux_agree_non_modify`.
+- these are cheap masks over the existing all-class candidate predictions, so the next loop should stay near the current 15-20 minute runtime.

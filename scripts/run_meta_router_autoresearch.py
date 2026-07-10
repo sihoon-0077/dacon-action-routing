@@ -541,6 +541,9 @@ def main():
     folds = np.load(ROOT / "artifacts" / "distill_step2_strict" / "fold_ids.npy")
     adv, teacher, d2, blend, base_probs = load_arrays()
     cat_rows, numeric, base_pred = make_features(samples, adv, teacher, d2, blend, base_probs)
+    adv_label = np.array([ACTIONS[i] for i in adv.argmax(axis=1)], dtype=object)
+    teacher_label = np.array([ACTIONS[i] for i in teacher.argmax(axis=1)], dtype=object)
+    d2_label = np.array([ACTIONS[i] for i in d2.argmax(axis=1)], dtype=object)
     base_ordered = np.sort(base_probs, axis=1)
     base_margin_values = base_ordered[:, -1] - base_ordered[:, -2]
     base_entropy_values = np.array([entropy(row) for row in base_probs], dtype=np.float32)
@@ -588,14 +591,25 @@ def main():
         cand_pred, cand_conf = predict_oof(kind, cat_rows, numeric, y, folds, scope_name)
         if scope_name == "all":
             same_group = np.array([ACTION_TO_GROUP.get(a) == ACTION_TO_GROUP.get(b) for a, b in zip(base_pred, cand_pred)])
+            base_non_modify = ~np.isin(base_pred, MODIFY)
+            cand_eq_teacher = cand_pred == teacher_label
+            cand_eq_d2 = cand_pred == d2_label
+            cand_eq_adv = cand_pred == adv_label
+            cand_eq_teacher_d2 = cand_eq_teacher & cand_eq_d2
+            cand_eq_any_aux = cand_eq_teacher | cand_eq_d2 | cand_eq_adv
             scopes = {
                 "all": np.ones(len(y), dtype=bool),
                 "base_inspect": np.isin(base_pred, INSPECT),
                 "base_execute": np.isin(base_pred, EXECUTE),
                 "base_communicate": np.isin(base_pred, COMMUNICATE),
-                "base_non_modify": ~np.isin(base_pred, MODIFY),
+                "base_non_modify": base_non_modify,
                 "same_group": same_group,
-                "same_group_non_modify": same_group & (~np.isin(base_pred, MODIFY)),
+                "same_group_non_modify": same_group & base_non_modify,
+                "cand_eq_teacher_non_modify": cand_eq_teacher & base_non_modify,
+                "cand_eq_d2_non_modify": cand_eq_d2 & base_non_modify,
+                "cand_eq_teacher_d2_non_modify": cand_eq_teacher_d2 & base_non_modify,
+                "cand_eq_any_aux_non_modify": cand_eq_any_aux & base_non_modify,
+                "same_group_aux_agree_non_modify": same_group & cand_eq_any_aux & base_non_modify,
                 "base_margin_lte_005": base_margin_values <= 0.05,
                 "base_margin_lte_010": base_margin_values <= 0.10,
                 "base_margin_lte_020": base_margin_values <= 0.20,
