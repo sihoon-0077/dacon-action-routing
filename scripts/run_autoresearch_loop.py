@@ -130,6 +130,7 @@ def main():
         commands = [
             ("replay_audit", ["scripts/audit_replay_leak.py", "--data-dir", "data", "--out-dir", "artifacts/reports/replay_audit"], 600),
             ("inspect_autoresearch", ["scripts/run_inspect_autoresearch.py"], 1800),
+            ("prob_blend_autoresearch", ["scripts/run_prob_blend_autoresearch.py"], 600),
             ("meta_router_autoresearch", ["scripts/run_meta_router_autoresearch.py"], 3600),
         ]
         for name, cmd, timeout in commands:
@@ -142,6 +143,7 @@ def main():
             payload["last_commands"].append(result)
             payload["best"] = {
                 "inspect": best_from_csv("reports/inspect_autoresearch/results.csv"),
+                "prob_blend": best_from_csv("reports/prob_blend_autoresearch/results.csv"),
                 "meta_router": best_from_csv("reports/meta_router_autoresearch/results.csv"),
             }
             best_deltas = []

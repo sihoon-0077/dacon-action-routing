@@ -1866,3 +1866,22 @@ New hypotheses:
 Patch applied:
 - added agreement scopes for all-class candidates: `cand_eq_teacher_non_modify`, `cand_eq_d2_non_modify`, `cand_eq_teacher_d2_non_modify`, `cand_eq_any_aux_non_modify`, and `same_group_aux_agree_non_modify`.
 - these are cheap masks over the existing all-class candidate predictions, so the next loop should stay near the current 15-20 minute runtime.
+
+Heartbeat update:
+- timestamp: `2026-07-10 13:55 KST`
+- cycle: `17`, stage: `sleeping`.
+- agreement-gated meta-router completed in `1346.5s` and did not improve the global best.
+- current meta-router best remains `sgdl2_0.00008_all_all_thr0.42`, Macro-F1 `0.740889`, delta `+0.016805`.
+- new probability blend sweep found a stronger OOF base: `logblend_a0.40_t0.50_d0.10_b0.75`, Macro-F1 `0.742684`, delta `+0.018600`.
+- this is the first new OOF step that clearly beats the meta-router best, so the active hypothesis changes from "more override masks" to "better base probability geometry".
+- `+0.03` gate remains closed.
+
+New hypotheses:
+- H-AUTO-34: the current distill base underweights the strict teacher; the best log-blend uses advanced `0.40`, teacher `0.50`, D2 `0.10`, and a lower bias scale `0.75`.
+- H-AUTO-35: meta-routing on top of the improved log-blend may recover additional inspect/execute corrections that were hidden by the weaker 0.5 advanced / 0.5 D2 base.
+- H-AUTO-36: if log-blend + meta-router does not beat `0.742684`, then the meta-router is mostly correcting calibration noise from the old base rather than adding independent policy signal.
+
+Patch applied:
+- added `scripts/run_prob_blend_autoresearch.py` to sweep log-linear advanced/teacher/D2 probability blends and bias scale.
+- added `prob_blend_autoresearch` to the 24h loop before `meta_router_autoresearch`.
+- updated `run_meta_router_autoresearch.py` so it reads `reports/prob_blend_autoresearch/best_config.json` when present and uses that log-blend as its base.

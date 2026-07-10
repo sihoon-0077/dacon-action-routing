@@ -251,9 +251,24 @@ def load_arrays():
     teacher = np.load(ROOT / "artifacts" / "distill_step2_strict" / "teacher_oof" / "teacher_oof_probs.npy").astype(np.float32)
     d2 = np.load(ROOT / "reports" / "distill_step2_strict" / "mlp_oof" / "D2-M5" / "oof_probs.npy").astype(np.float32)
     cfg = read_json(ROOT / "reports" / "distill_step2_strict" / "blends" / "best_config.json")
-    blend = 0.5 * adv + 0.5 * d2
     bias = np.array([float(cfg["bias"]["bias_by_class"].get(a, 0.0)) for a in ACTIONS], dtype=np.float32)
-    base_scores = np.log(np.clip(blend, 1e-12, 1.0)) + bias[None, :]
+    prob_cfg_path = ROOT / "reports" / "prob_blend_autoresearch" / "best_config.json"
+    if prob_cfg_path.exists():
+        prob_cfg = read_json(prob_cfg_path)
+        wa = float(prob_cfg.get("w_adv", 0.5) or 0.5)
+        wt = float(prob_cfg.get("w_teacher", 0.0) or 0.0)
+        wd = float(prob_cfg.get("w_d2", 0.5) or 0.5)
+        bs = float(prob_cfg.get("bias_scale", 1.0) or 1.0)
+        raw_scores = (
+            wa * np.log(np.clip(adv, 1e-12, 1.0))
+            + wt * np.log(np.clip(teacher, 1e-12, 1.0))
+            + wd * np.log(np.clip(d2, 1e-12, 1.0))
+        )
+        blend = softmax(raw_scores, axis=1).astype(np.float32)
+        base_scores = raw_scores + bs * bias[None, :]
+    else:
+        blend = 0.5 * adv + 0.5 * d2
+        base_scores = np.log(np.clip(blend, 1e-12, 1.0)) + bias[None, :]
     base_probs = softmax(base_scores, axis=1)
     return adv, teacher, d2, blend, base_probs
 
