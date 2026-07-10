@@ -43,6 +43,7 @@ ACTION_TO_GROUP = {a: g for g, arr in GROUPS.items() for a in arr}
 THRESHOLDS_COARSE = [0.0, 0.35, 0.45, 0.55, 0.65, 0.75, 0.85]
 THRESHOLDS_FINE = [0.0, 0.30, 0.35, 0.40, 0.42, 0.45, 0.48, 0.50, 0.55, 0.60, 0.65, 0.75, 0.85]
 THRESHOLDS_L2_PEAK = [0.35, 0.38, 0.40, 0.42, 0.44, 0.45, 0.48]
+THRESHOLDS_L2_FINE = [0.40, 0.42, 0.43, 0.44, 0.45, 0.46, 0.47, 0.48, 0.50]
 THRESHOLDS_PAIR = [0.35, 0.42, 0.45, 0.48, 0.50, 0.55, 0.65]
 PAIRWISE_PROBE_KINDS = set()
 
@@ -595,6 +596,8 @@ def main():
         ("sgdl2_0.00007", "all", THRESHOLDS_L2_PEAK),
         ("sgdl2_0.00009", "all", THRESHOLDS_L2_PEAK),
         ("sgdl2_0.0001", "all", THRESHOLDS_L2_PEAK),
+        ("sgdl2_0.000055", "all", THRESHOLDS_L2_FINE),
+        ("sgdl2_0.000065", "all", THRESHOLDS_L2_FINE),
         ("sgdl2_0.00006", "all_non_modify", [0.35, 0.38, 0.40, 0.42, 0.45, 0.48, 0.50]),
         ("sgdl2_0.00008", "all_non_modify", [0.35, 0.38, 0.40, 0.42, 0.45, 0.48, 0.50]),
         ("sgd_0.00003", "all_non_modify", [0.40, 0.42, 0.45, 0.48, 0.50]),

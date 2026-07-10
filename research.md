@@ -1885,3 +1885,21 @@ Patch applied:
 - added `scripts/run_prob_blend_autoresearch.py` to sweep log-linear advanced/teacher/D2 probability blends and bias scale.
 - added `prob_blend_autoresearch` to the 24h loop before `meta_router_autoresearch`.
 - updated `run_meta_router_autoresearch.py` so it reads `reports/prob_blend_autoresearch/best_config.json` when present and uses that log-blend as its base.
+
+Heartbeat update:
+- timestamp: `2026-07-10 14:55 KST`
+- cycle: `19`, stage: `running_meta_router_autoresearch`.
+- cycle 18 validated the new log-blend base: meta-router on top of `logblend_a0.40_t0.50_d0.10_b0.75` reached Macro-F1 `0.744376`.
+- best row: `sgdl2_0.00006_all_cand_eq_any_aux_non_modify_thr0.45`, accuracy `0.744029`, macro precision `0.748427`, macro recall `0.746886`.
+- this beats the previous meta-router best `0.740889` by about `+0.00349`, and beats the standalone probability blend `0.742684` by about `+0.00169`.
+- inspect delta relative to the new blend base is slightly negative (`-0.000367`), so the gain is mostly global calibration / non-inspect correction rather than direct inspect repair.
+- `+0.03` gate remains closed.
+
+New hypotheses:
+- H-AUTO-37: the current winning correction is a high-precision auxiliary-agreement gate, not a broad all-row override.
+- H-AUTO-38: the l2 alpha optimum shifted after replacing the base probability geometry; the local region around `5.5e-5~6.5e-5` deserves a tight threshold sweep.
+- H-AUTO-39: inspect remains stubborn; further gains are more likely from calibrated base blending plus conservative non-modify corrections than from direct inspect pair rules.
+
+Patch applied:
+- added a tighter l2 threshold grid `[0.40,0.42,0.43,0.44,0.45,0.46,0.47,0.48,0.50]`.
+- added `sgdl2_0.000055` and `sgdl2_0.000065` probes on that grid for the next cycle.
