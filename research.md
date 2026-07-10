@@ -1937,3 +1937,19 @@ New hypotheses:
 Patch applied:
 - refined `scripts/run_prob_blend_autoresearch.py` with a local grid around the prior best blend.
 - manually ran the refined blend sweep and updated `reports/prob_blend_autoresearch/best_config.json` for the next meta-router cycle.
+
+Heartbeat update:
+- timestamp: `2026-07-10 17:55 KST`
+- cycle: `23`, stage: `sleeping`.
+- refined probability blend was picked up correctly by the meta-router: base Macro-F1 is now `0.743052`.
+- new OOF best: `sgdl2_0.00008_all_base_margin_lte_020_thr0.42`, Macro-F1 `0.745170`.
+- metrics: accuracy `0.744114`, macro precision `0.750226`, macro recall `0.748138`.
+- improvement over the refined blend base is `+0.002118`; improvement over previous meta best `0.744504` is about `+0.000665`.
+- inspect delta is now positive (`+0.000640`), unlike the previous best where inspect moved backward.
+- changed rows: `1866`; fixed target inspect errors: `385`; minimum fold delta: `+0.002982`.
+- `+0.03` gate remains closed, but this branch is still locally alive because both global Macro-F1 and inspect F1 improved.
+
+New hypotheses:
+- H-AUTO-46: the refined blend needs a slightly stronger correction model (`sgdl2_0.00008`) than the earlier coarse blend (`0.000065`).
+- H-AUTO-47: the stable operating region is still around `base_margin_lte_020`, so confidence-margin gating is the most useful cheap mask found so far.
+- H-AUTO-48: because inspect delta finally turned positive, the next practical step is packaging this exact policy or testing a very small local threshold sweep around `thr0.41-0.43`, not adding a broad new specialist.
