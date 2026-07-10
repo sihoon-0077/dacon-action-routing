@@ -566,8 +566,9 @@ def main():
     rows.append(base_row)
 
     # Keep the heartbeat loop under its 3600s command timeout. The broad grid and
-    # pairwise probes are already saturated; continue with the local L2 peak and
-    # light execute/communicate probes.
+    # pairwise probes are already saturated; continue with the local L2 peak,
+    # light execute/communicate probes, and a non-modify-only router for the
+    # still-open inspect/execute/communicate bottleneck.
     specs = [
         ("sgd_0.00003", "all", [0.42, 0.45, 0.48, 0.50]),
         ("sgd_0.00005", "all", [0.40, 0.42, 0.45]),
@@ -576,6 +577,9 @@ def main():
         ("sgdl2_0.00007", "all", THRESHOLDS_L2_PEAK),
         ("sgdl2_0.00009", "all", THRESHOLDS_L2_PEAK),
         ("sgdl2_0.0001", "all", THRESHOLDS_L2_PEAK),
+        ("sgdl2_0.00006", "all_non_modify", [0.35, 0.38, 0.40, 0.42, 0.45, 0.48, 0.50]),
+        ("sgdl2_0.00008", "all_non_modify", [0.35, 0.38, 0.40, 0.42, 0.45, 0.48, 0.50]),
+        ("sgd_0.00003", "all_non_modify", [0.40, 0.42, 0.45, 0.48, 0.50]),
         ("sgd_0.00003", "execute", [0.35, 0.42, 0.45, 0.48, 0.50]),
         ("sgd_0.00003", "communicate", [0.35, 0.42, 0.45, 0.48, 0.50]),
     ]

@@ -1833,3 +1833,19 @@ Patch applied:
 - removed extra-tree and broad duplicate SGD/SGD-L2 grids from the active loop.
 - kept the local l2 peak around `alpha=6e-5~1e-4`, plus light execute/communicate probes.
 - stopped only the stale child meta-router process so the main 24h runner can continue and pick up the narrowed script on the next cycle.
+
+Heartbeat update:
+- timestamp: `2026-07-10 12:55 KST`
+- cycle: `15`, stage: `sleeping`.
+- narrowed meta-router sweep completed successfully in `976.2s`, down from the previous `3600s` timeout risk.
+- current strict OOF best is unchanged: `sgdl2_0.00008_all_all_thr0.42`, Macro-F1 `0.740889`, accuracy `0.742229`, macro precision `0.742902`, macro recall `0.744882`.
+- top variants remain tightly clustered around `0.7403~0.7409`; no `+0.03` gate.
+
+New hypotheses:
+- H-AUTO-28: all-class meta-routing is saturated near the current `sgdl2_8e-5/thr0.42` basin; threshold or alpha tweaks alone are unlikely to jump the public gap.
+- H-AUTO-29: modify actions are already high-F1 and may dilute the learning problem; a non-modify-only router may focus capacity on inspect/execute/communicate mistakes.
+- H-AUTO-30: if non-modify-only routing fails, the next lift probably requires a new deployable signal source, not more linear reranking over the same probability arrays.
+
+Patch applied:
+- added cheap `all_non_modify` probes for `sgdl2_0.00006`, `sgdl2_0.00008`, and `sgd_0.00003`.
+- these train the meta-router only on non-modify labels and evaluate conservative `base_non_modify` / `same_group_non_modify` override scopes.
