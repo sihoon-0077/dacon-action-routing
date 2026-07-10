@@ -1920,3 +1920,20 @@ New hypotheses:
 Patch applied:
 - added cheap margin scopes `base_margin_lte_015`, `base_margin_lte_018`, `base_margin_lte_022`, and `base_margin_lte_025`.
 - no new model families were added; this only expands mask evaluation on already trained candidate predictions.
+
+Heartbeat update:
+- timestamp: `2026-07-10 16:25 KST`
+- cycle: `22`, stage: `running_meta_router_autoresearch`.
+- fine margin gates did not beat the best from cycle 20; current meta-router best remains `sgdl2_0.000065_all_base_margin_lte_020_thr0.43`, Macro-F1 `0.744500`.
+- standalone probability blend local refinement improved the base from `0.742684` to `0.743052`.
+- new blend best: `logblend_a0.44_t0.48_d0.08_b1.25`, accuracy `0.742943`, macro precision `0.750912`, macro recall `0.744457`.
+- `+0.03` gate remains closed.
+
+New hypotheses:
+- H-AUTO-43: the best probability geometry is slightly more advanced-heavy and bias-heavy than the previous coarse blend: advanced `0.44`, teacher `0.48`, D2 `0.08`, bias scale `1.25`.
+- H-AUTO-44: the meta-router best should be re-evaluated on top of this refined blend before adding new model families.
+- H-AUTO-45: if the refined blend + meta-router does not improve beyond `0.7445`, the current linear/meta stack is likely locally saturated.
+
+Patch applied:
+- refined `scripts/run_prob_blend_autoresearch.py` with a local grid around the prior best blend.
+- manually ran the refined blend sweep and updated `reports/prob_blend_autoresearch/best_config.json` for the next meta-router cycle.

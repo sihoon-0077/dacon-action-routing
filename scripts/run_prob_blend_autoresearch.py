@@ -95,17 +95,25 @@ def main():
         "teacher": np.log(np.clip(teacher, EPS, 1.0)),
         "d2": np.log(np.clip(d2, EPS, 1.0)),
     }
-    weight_grid = []
+    weight_grid = set()
     for wa in [0.0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6]:
         for wt in [0.0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6]:
             wd = 1.0 - wa - wt
             if wd < -1e-9 or wd > 1.0:
                 continue
-            weight_grid.append((round(wa, 2), round(wt, 2), round(wd, 2)))
+            weight_grid.add((round(wa, 2), round(wt, 2), round(wd, 2)))
 
-    for wa, wt, wd in weight_grid:
+    # Local refinement around the current best a=0.40, teacher=0.50, d2=0.10.
+    for wa in [0.34, 0.36, 0.38, 0.40, 0.42, 0.44, 0.46]:
+        for wt in [0.44, 0.46, 0.48, 0.50, 0.52, 0.54, 0.56]:
+            wd = 1.0 - wa - wt
+            if wd < -1e-9 or wd > 1.0:
+                continue
+            weight_grid.add((round(wa, 2), round(wt, 2), round(wd, 2)))
+
+    for wa, wt, wd in sorted(weight_grid):
         base = wa * logs["adv"] + wt * logs["teacher"] + wd * logs["d2"]
-        for bs in [0.0, 0.5, 0.75, 1.0, 1.25, 1.5]:
+        for bs in [0.0, 0.5, 0.65, 0.70, 0.75, 0.80, 0.875, 1.0, 1.25, 1.5]:
             scores = base + bs * bias[None, :]
             rows.append(
                 evaluate(
