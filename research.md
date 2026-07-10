@@ -1801,3 +1801,16 @@ Patch applied:
 - added narrow l2 peak thresholds `[0.35, 0.38, 0.40, 0.42, 0.44, 0.45, 0.48]`.
 - added `sgdl2_0.00007`, `sgdl2_0.00009`, and `sgdl2_0.0001` only on that narrow threshold grid.
 - added `sgdl2_0.00008` to transition pair probing.
+
+Submit candidate:
+- timestamp: `2026-07-10 10:25 KST`
+- built: `meta_sgdl2_08.zip`
+- size: `440726357` bytes.
+- source idea: current strict OOF best `sgdl2_0.00008_all_all_thr0.42`, Macro-F1 `0.740889`.
+- deployable form: `distill_student_strict` + full-train l2 meta-router; teacher OOF features are replaced with D2 student probabilities because hidden test cannot use OOF teacher arrays.
+- smoke: passed on the 5-row public test stub; `submission.csv` was created and `meta_router_sgdl2` applied to `4/5` rows with `0` changed relative to the distill base on that tiny stub.
+- caution: this is not a perfect replica of the OOF best because the original validation stack used `teacher_oof_probs`; public submit score must be treated as the real adoption gate.
+
+Instrumentation patch:
+- `scripts/run_meta_router_autoresearch.py` now records `accuracy`, `precision_macro`, and `recall_macro` for every variant.
+- summary tables now include Macro-F1, accuracy, macro precision, and macro recall so future sweeps can detect variants that improve one metric while damaging another.

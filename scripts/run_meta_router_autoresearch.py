@@ -10,7 +10,7 @@ from scipy.special import softmax
 from sklearn.ensemble import ExtraTreesClassifier
 from sklearn.feature_extraction import DictVectorizer
 from sklearn.linear_model import SGDClassifier
-from sklearn.metrics import f1_score
+from sklearn.metrics import accuracy_score, f1_score, precision_score, recall_score
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -294,6 +294,18 @@ def macro(y, pred):
     return float(f1_score(y, pred, labels=ACTIONS, average="macro", zero_division=0))
 
 
+def precision_macro(y, pred):
+    return float(precision_score(y, pred, labels=ACTIONS, average="macro", zero_division=0))
+
+
+def recall_macro(y, pred):
+    return float(recall_score(y, pred, labels=ACTIONS, average="macro", zero_division=0))
+
+
+def accuracy(y, pred):
+    return float(accuracy_score(y, pred))
+
+
 def group_macro(y, pred, group):
     return float(f1_score(y, pred, labels=GROUPS[group], average="macro", zero_division=0))
 
@@ -420,6 +432,9 @@ def evaluate_variant(name, y, base_pred, candidate_pred, candidate_conf, folds, 
             {
                 "name": f"{name}_thr{thr:.2f}",
                 "macro_f1": macro(y, pred),
+                "accuracy": accuracy(y, pred),
+                "precision_macro": precision_macro(y, pred),
+                "recall_macro": recall_macro(y, pred),
                 "delta": macro(y, pred) - macro(y, base_pred),
                 "inspect_f1": group_macro(y, pred, "inspect"),
                 "inspect_delta": group_macro(y, pred, "inspect") - group_macro(y, base_pred, "inspect"),
@@ -462,6 +477,9 @@ def evaluate_transition_probes(name, y, base_pred, candidate_pred, candidate_con
                 row = {
                     "name": f"{name}_pair_{base_action}_to_{cand_action}_thr{thr:.2f}",
                     "macro_f1": score,
+                    "accuracy": accuracy(y, pred),
+                    "precision_macro": precision_macro(y, pred),
+                    "recall_macro": recall_macro(y, pred),
                     "delta": score - base_score,
                     "inspect_f1": group_macro(y, pred, "inspect"),
                     "inspect_delta": group_macro(y, pred, "inspect") - group_macro(y, base_pred, "inspect"),
@@ -497,6 +515,9 @@ def evaluate_transition_probes(name, y, base_pred, candidate_pred, candidate_con
             {
                 "name": f"{name}_pair_greedy_top{len(selected)}",
                 "macro_f1": macro(y, current),
+                "accuracy": accuracy(y, current),
+                "precision_macro": precision_macro(y, current),
+                "recall_macro": recall_macro(y, current),
                 "delta": macro(y, current) - base_score,
                 "inspect_f1": group_macro(y, current, "inspect"),
                 "inspect_delta": group_macro(y, current, "inspect") - group_macro(y, base_pred, "inspect"),
@@ -528,6 +549,9 @@ def main():
     base_row = {
         "name": "base_strict_distill_bias",
         "macro_f1": macro(y, base_pred),
+        "accuracy": accuracy(y, base_pred),
+        "precision_macro": precision_macro(y, base_pred),
+        "recall_macro": recall_macro(y, base_pred),
         "delta": 0.0,
         "inspect_f1": group_macro(y, base_pred, "inspect"),
         "inspect_delta": 0.0,
@@ -646,6 +670,9 @@ def main():
         f"- base Macro-F1: `{base_row['macro_f1']:.6f}`",
         f"- best: `{best['name']}`",
         f"- best Macro-F1: `{best['macro_f1']:.6f}`",
+        f"- best accuracy: `{float(best.get('accuracy', 0.0)):.6f}`",
+        f"- best precision_macro: `{float(best.get('precision_macro', 0.0)):.6f}`",
+        f"- best recall_macro: `{float(best.get('recall_macro', 0.0)):.6f}`",
         f"- best delta: `{best['delta']:.6f}`",
         f"- best inspect delta: `{best['inspect_delta']:.6f}`",
         f"- changed: `{best['changed']}`",
@@ -653,13 +680,15 @@ def main():
         "",
         "## Top Variants",
         "",
-        "| name | Macro-F1 | delta | inspect_delta | changed | fixed_target_errors | min_fold_delta |",
-        "|---|---:|---:|---:|---:|---:|---:|",
+        "| name | Macro-F1 | Acc | Prec | Rec | delta | inspect_delta | changed | fixed_target_errors | min_fold_delta |",
+        "|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|",
     ]
     for row in rows[:20]:
         lines.append(
-            f"| `{row['name']}` | `{row['macro_f1']:.6f}` | `{row['delta']:.6f}` | "
-            f"`{row['inspect_delta']:.6f}` | `{row['changed']}` | `{row['fixed_target_errors']}` | `{row['min_fold_delta']:.6f}` |"
+            f"| `{row['name']}` | `{row['macro_f1']:.6f}` | `{float(row.get('accuracy', 0.0)):.6f}` | "
+            f"`{float(row.get('precision_macro', 0.0)):.6f}` | `{float(row.get('recall_macro', 0.0)):.6f}` | "
+            f"`{row['delta']:.6f}` | `{row['inspect_delta']:.6f}` | `{row['changed']}` | "
+            f"`{row['fixed_target_errors']}` | `{row['min_fold_delta']:.6f}` |"
         )
     lines.extend(
         [
