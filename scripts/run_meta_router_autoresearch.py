@@ -44,7 +44,7 @@ THRESHOLDS_COARSE = [0.0, 0.35, 0.45, 0.55, 0.65, 0.75, 0.85]
 THRESHOLDS_FINE = [0.0, 0.30, 0.35, 0.40, 0.42, 0.45, 0.48, 0.50, 0.55, 0.60, 0.65, 0.75, 0.85]
 THRESHOLDS_L2_PEAK = [0.35, 0.38, 0.40, 0.42, 0.44, 0.45, 0.48]
 THRESHOLDS_PAIR = [0.35, 0.42, 0.45, 0.48, 0.50, 0.55, 0.65]
-PAIRWISE_PROBE_KINDS = {"sgd_0.00003", "sgd_0.00005", "sgdl2_0.00005", "sgdl2_0.00008"}
+PAIRWISE_PROBE_KINDS = set()
 
 TARGET_PAIRS = [
     ("grep_search", "read_file"),
@@ -565,29 +565,19 @@ def main():
     }
     rows.append(base_row)
 
+    # Keep the heartbeat loop under its 3600s command timeout. The broad grid and
+    # pairwise probes are already saturated; continue with the local L2 peak and
+    # light execute/communicate probes.
     specs = [
-        ("sgd_0.00002", "all", THRESHOLDS_FINE),
-        ("sgd_0.00003", "all", THRESHOLDS_FINE),
-        ("sgd_0.00005", "all", THRESHOLDS_FINE),
-        ("sgd_0.00007", "all", THRESHOLDS_FINE),
-        ("sgd_0.0001", "all", THRESHOLDS_FINE),
-        ("sgdl2_0.00003", "all", THRESHOLDS_FINE),
-        ("sgdl2_0.00004", "all", THRESHOLDS_FINE),
-        ("sgdl2_0.00005", "all", THRESHOLDS_FINE),
-        ("sgdl2_0.00006", "all", THRESHOLDS_FINE),
-        ("sgdl2_0.00008", "all", THRESHOLDS_FINE),
+        ("sgd_0.00003", "all", [0.42, 0.45, 0.48, 0.50]),
+        ("sgd_0.00005", "all", [0.40, 0.42, 0.45]),
+        ("sgdl2_0.00006", "all", THRESHOLDS_L2_PEAK),
+        ("sgdl2_0.00008", "all", THRESHOLDS_L2_PEAK),
         ("sgdl2_0.00007", "all", THRESHOLDS_L2_PEAK),
         ("sgdl2_0.00009", "all", THRESHOLDS_L2_PEAK),
         ("sgdl2_0.0001", "all", THRESHOLDS_L2_PEAK),
-        ("sgd_0.00003", "inspect", THRESHOLDS_FINE),
-        ("sgd_0.0001", "inspect", THRESHOLDS_FINE),
-        ("sgd_0.00003", "execute", THRESHOLDS_FINE),
-        ("sgd_0.0001", "execute", THRESHOLDS_FINE),
-        ("sgd_0.00003", "communicate", THRESHOLDS_FINE),
-        ("sgd_0.0001", "communicate", THRESHOLDS_FINE),
-        ("et_4", "inspect", THRESHOLDS_COARSE),
-        ("et_8", "inspect", THRESHOLDS_COARSE),
-        ("et_8", "all_non_modify", THRESHOLDS_COARSE),
+        ("sgd_0.00003", "execute", [0.35, 0.42, 0.45, 0.48, 0.50]),
+        ("sgd_0.00003", "communicate", [0.35, 0.42, 0.45, 0.48, 0.50]),
     ]
     for kind, scope_name, thresholds in specs:
         print(f"running {kind} scope={scope_name}", flush=True)

@@ -1814,3 +1814,22 @@ Submit candidate:
 Instrumentation patch:
 - `scripts/run_meta_router_autoresearch.py` now records `accuracy`, `precision_macro`, and `recall_macro` for every variant.
 - summary tables now include Macro-F1, accuracy, macro precision, and macro recall so future sweeps can detect variants that improve one metric while damaging another.
+
+Heartbeat update:
+- timestamp: `2026-07-10 12:25 KST`
+- cycle: `14`, stage: `running_meta_router_autoresearch`.
+- current strict OOF best remains `sgdl2_0.00008_all_all_thr0.42`, Macro-F1 `0.740889`, delta `+0.016805`.
+- inspect specialist best remains effectively flat: `pair_union_c1_thr0.85`, delta `+0.000009`.
+- the `+0.03` gate remains closed.
+- cycle 13 hit the `3600s` command timeout, and cycle 14 had started another stale broad meta-router sweep before the narrowed-grid patch could take effect.
+
+New hypotheses:
+- H-AUTO-25: broad all-class grids, extra-tree probes, and pairwise transition probes are now saturated; rerunning them mostly creates timeout risk instead of new signal.
+- H-AUTO-26: the autoresearch loop should optimize for fresh completed cycles, not exhaustive local sweeps, because incomplete one-hour meta-router runs provide no new decision evidence.
+- H-AUTO-27: the next cheap path is a narrow l2 peak sweep plus light execute/communicate probes; if that still stalls below `+0.03`, the remaining lift likely needs new features or submit-policy simulation rather than more linear-grid search.
+
+Patch applied:
+- disabled pairwise transition probes in `scripts/run_meta_router_autoresearch.py`.
+- removed extra-tree and broad duplicate SGD/SGD-L2 grids from the active loop.
+- kept the local l2 peak around `alpha=6e-5~1e-4`, plus light execute/communicate probes.
+- stopped only the stale child meta-router process so the main 24h runner can continue and pick up the narrowed script on the next cycle.
