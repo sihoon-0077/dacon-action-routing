@@ -1903,3 +1903,20 @@ New hypotheses:
 Patch applied:
 - added a tighter l2 threshold grid `[0.40,0.42,0.43,0.44,0.45,0.46,0.47,0.48,0.50]`.
 - added `sgdl2_0.000055` and `sgdl2_0.000065` probes on that grid for the next cycle.
+
+Heartbeat update:
+- timestamp: `2026-07-10 15:55 KST`
+- cycle: `21`, stage: `running_meta_router_autoresearch`.
+- cycle 20 found a small new OOF best: `sgdl2_0.000065_all_base_margin_lte_020_thr0.43`, Macro-F1 `0.744500`.
+- improvement over previous best `0.744376` is about `+0.000124`.
+- best delta over the log-blend base is `+0.001816`; `+0.03` gate remains closed.
+- the top margin-gated rows cluster tightly around `base_margin_lte_020`, while inspect delta is negative, so this remains a calibration/uncertainty correction rather than an inspect-specific fix.
+
+New hypotheses:
+- H-AUTO-40: the winning scope is not exactly "low confidence" in general, but a narrow base-margin band around `0.20`.
+- H-AUTO-41: adding more alpha values is now less efficient than slicing the margin gate more precisely.
+- H-AUTO-42: if `0.18/0.22/0.25` margin cuts do not improve, this branch is locally saturated and should be packaged or replaced with a new deployable signal.
+
+Patch applied:
+- added cheap margin scopes `base_margin_lte_015`, `base_margin_lte_018`, `base_margin_lte_022`, and `base_margin_lte_025`.
+- no new model families were added; this only expands mask evaluation on already trained candidate predictions.
